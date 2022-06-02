@@ -56,4 +56,6 @@
     <string name="permission_info_storage">存储:缓存图片、配置</string>
     <string name="permission_info_wake_app">唤起应用:点击调起其他APP</string>
     <string name="restart_app_enable_crash_report">重启生效</string>
+    <string name="add_widget_fialed">添加小组件失败</string>
+    <string name="permission_info_clipboard">写入剪切板:复制Cookie、UID</string>
 </resources>

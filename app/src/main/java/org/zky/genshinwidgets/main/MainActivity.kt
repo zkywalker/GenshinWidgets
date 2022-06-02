@@ -188,12 +188,13 @@ class MainActivity : AppCompatActivity() {
                     Text(text = getString(R.string.permission_info_network))
                     Text(text = getString(R.string.permission_info_storage))
                     Text(text = getString(R.string.permission_info_wake_app))
+                    Text(text = getString(R.string.permission_info_clipboard))
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = getString(R.string.crash_report))
                         Switch(checked = Config.crashReport, onCheckedChange = {
                             Config.crashReport = it
                             getString(R.string.restart_app_enable_crash_report).toast()
                         })
-                        Text(text = getString(R.string.crash_report))
                     }
                 }
             },

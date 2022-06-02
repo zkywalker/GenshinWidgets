@@ -71,7 +71,7 @@ fun WidgetMain(model: DailyNote?) {
             .appWidgetBackground()
             .fillMaxSize()
             .background(imageProvider = ImageProvider(R.drawable.bg_widget_def_c14))
-            .padding(12.dp)
+            .padding(10.dp)
             .clickable(actionLaunchApp),
         contentAlignment = Alignment.TopEnd
     ) {
@@ -99,14 +99,14 @@ fun WidgetMain(model: DailyNote?) {
                     style = TextStyle(
                         color = ColorProvider(Color.White),
                         fontSize = 10.sp
-                    )
-
+                    ),
+                    modifier = GlanceModifier.padding(bottom = 5.dp)
                 )
                 Image(
                     ImageProvider(R.drawable.ic_baseline_assignment_turned_in_24),
                     contentDescription = "sign",
                     modifier = GlanceModifier
-                        .padding(8.dp)
+                        .size(20.dp) // this image has no padding, so we need to set size to make it look good
                         .clickable(onClick = actionSign)
                 )
                 if (!TextUtils.isEmpty(signDate) && signDate == format.format(Date())) {
