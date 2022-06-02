@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.zky.genshinwidgets">
+
+    <queries>
+        <package android:name="org.zky.genshinwidgets" />
+        <package android:name="com.miHoYo.Yuanshen" />
+        <package android:name="com.mihoyo.hyperion" />
+        <package android:name="com.miHoYo.cloudgames.ys" />
+    </queries>
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <application
+        android:name="org.zky.App"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.GenshinWidgets">
+        <activity
+            android:name=".widgets.WakeAppActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity
+            android:name=".webview.WebViewActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GenshinWidgets2" />
+        <activity
+            android:name=".widgets.WidgetsConfigActivity"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".webview.WebLoginActivity"
+            android:exported="false" />
+        <activity
+            android:name=".main.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".widgets.GlanceReceiver"
+            android:enabled="@bool/glance_appwidget_available"
+            android:exported="false"
+            android:process=":newinst">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <!-- 小部件配置信息 -->
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/glance_info" />
+        </receiver>
+
+        <meta-data
+            android:name="android.appwidget.provider"
+            android:resource="@xml/glance_info" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="org.zky.genshinwidgets.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+</manifest>
