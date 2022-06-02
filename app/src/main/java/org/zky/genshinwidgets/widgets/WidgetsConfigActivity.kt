@@ -29,6 +29,7 @@ import org.zky.genshinwidgets.res.color
 import org.zky.genshinwidgets.utils.getString
 import org.zky.genshinwidgets.utils.loginCookie
 import org.zky.genshinwidgets.utils.startActivity
+import org.zky.genshinwidgets.utils.toast
 
 class WidgetsConfigActivity : AppCompatActivity() {
 
@@ -67,6 +68,11 @@ class WidgetsConfigActivity : AppCompatActivity() {
             val ids = GlanceAppWidgetManager(this@WidgetsConfigActivity).getGlanceIds(
                 GenshinDailyNoteWidget::class.java
             )
+            if (ids.isEmpty()) {
+                R.string.add_widget_fialed.toast()
+                finish()
+                return@launch
+            }
             val curId = ids.last()
             GlanceCallbackAction().onRun(this@WidgetsConfigActivity, curId, actionParametersOf())
             val resultIntent = Intent()

@@ -52,7 +52,7 @@
             android:name=".widgets.GlanceReceiver"
             android:enabled="@bool/glance_appwidget_available"
             android:exported="false"
-            android:process=":newinst">
+            >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
