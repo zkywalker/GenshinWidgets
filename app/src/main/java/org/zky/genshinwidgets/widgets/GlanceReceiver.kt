@@ -2,6 +2,7 @@ package org.zky.genshinwidgets.widgets
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Context.ALARM_SERVICE
 import android.content.Intent
@@ -35,6 +36,14 @@ class GlanceReceiver : GlanceAppWidgetReceiver() {
         }
     }
 
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+    }
+
     override fun onEnabled(context: Context?) {
         super.onEnabled(context)
         refresh()
@@ -45,6 +54,9 @@ class GlanceReceiver : GlanceAppWidgetReceiver() {
             val ids = GlanceAppWidgetManager(application).getGlanceIds(
                 GenshinDailyNoteWidget::class.java
             )
+            if (ids.isEmpty()){
+                return@launch
+            }
             val curId = ids.last()
             GlanceCallbackAction(false).onRun(application, curId, actionParametersOf())
         }

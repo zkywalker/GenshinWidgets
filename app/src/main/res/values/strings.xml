@@ -44,7 +44,7 @@
     <string name="genshin">原神</string>
     <string name="yun_genshin">云原神</string>
     <string name="miyoushe">米游社</string>
-    <string name="config_widget">设置小工具</string>
+    <string name="config_widget">设置微件</string>
     <string name="login_plz">请先登录</string>
     <string name="did_not_add_widget">未添加小组件</string>
     <string name="save_config">保存设置</string>
@@ -58,4 +58,8 @@
     <string name="restart_app_enable_crash_report">重启生效</string>
     <string name="add_widget_fialed">添加小组件失败</string>
     <string name="permission_info_clipboard">写入剪切板:复制Cookie、UID</string>
+    <string name="show_uid">显示UID</string>
+    <string name="widget_ui_config">自定义小组件UI</string>
+    <string name="widget_setting">微件设置</string>
+    <string name="alert_no_widget">先去添加一个微件吧</string>
 </resources>

@@ -49,7 +49,7 @@ var signDate: String by PreferenceDelegate(SpCst.KEY_SIGN_DATE, "")
 val format = SimpleDateFormat("yyyy-MM-dd", Locale.CHINA)
 
 @Composable
-fun WidgetMain(model: DailyNote?) {
+fun WidgetMain(model: DailyNote?, role: UserRole? = null) {
 
     val action = actionRunCallback<GlanceCallbackAction>(
         actionParametersOf(GenshinDailyNoteWidget.ACTION_PARAMETERS_KEY to ACTION_REQUEST_DAILY_NOTE)
@@ -69,7 +69,7 @@ fun WidgetMain(model: DailyNote?) {
     Box(
         modifier = GlanceModifier
             .appWidgetBackground()
-            .fillMaxSize()
+            .size(160.dp)
             .background(imageProvider = ImageProvider(R.drawable.bg_widget_def_c14))
             .padding(10.dp)
             .clickable(actionLaunchApp),
@@ -80,7 +80,7 @@ fun WidgetMain(model: DailyNote?) {
                 Text(
                     text = "no data,click to refresh",
                     modifier = GlanceModifier
-                        .size(150.dp)
+                        .size(160.dp)
                         .clickable(onClick = action),
                     style = normalTextStyle
                 )
@@ -165,8 +165,26 @@ fun WidgetMain(model: DailyNote?) {
                 Row {
                     model.expeditions.forEach { item -> ExpeditionDetailView(item) }
                 }
+                if (Config.showUID && role != null) {
+                    Row(
+                        horizontalAlignment = Alignment.End,
+                        modifier = GlanceModifier.fillMaxSize()
+                    ) {
+                        Text(
+                            text = "UID:${role.game_uid}",
+                            style = TextStyle(
+                                color = ColorProvider(color.white_70),
+                                fontSize = 10.sp
+                            ),
+                            modifier = GlanceModifier
+                                .padding(top = 5.dp)
+                                .clickable(onClick = actionSign)
+                        )
+                    }
+                }
             }
         }
+
     }
 
 }

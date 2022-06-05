@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,12 +21,14 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.lifecycleScope
 import com.google.accompanist.flowlayout.FlowRow
 import kotlinx.coroutines.launch
+import org.zky.genshinwidgets.BuildConfig
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.ApiCst
-import org.zky.genshinwidgets.main.DefaultCard
 import org.zky.genshinwidgets.main.MainActivity
 import org.zky.genshinwidgets.model.WidgetsConfigModel
 import org.zky.genshinwidgets.res.color
+import org.zky.genshinwidgets.ui.DefaultCard
+import org.zky.genshinwidgets.ui.SwitchView
 import org.zky.genshinwidgets.utils.getString
 import org.zky.genshinwidgets.utils.loginCookie
 import org.zky.genshinwidgets.utils.startActivity
@@ -34,6 +37,8 @@ import org.zky.genshinwidgets.utils.toast
 class WidgetsConfigActivity : AppCompatActivity() {
 
     private var mAppWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
+
+    private lateinit var widgetIds: List<Int>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,14 +51,35 @@ class WidgetsConfigActivity : AppCompatActivity() {
         } ?: kotlin.run {
             mAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
         }
-
-        setContent {
-            MaterialTheme(colors = MaterialTheme.colors.copy(primary = color.primary)) {
-                RootView(mAppWidgetId, onConfirmClick, onHomeClick) {
-                    finish()
+        lifecycleScope.launch {
+            widgetIds = getAllWidgetIds()
+            if (widgetIds.isEmpty()) {
+                setContent {
+                    Text(
+                        text = getString(R.string.alert_no_widget),
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            } else {
+                setContent {
+                    MaterialTheme(colors = MaterialTheme.colors.copy(primary = color.primary)) {
+                        RootView(mAppWidgetId, onConfirmClick, onHomeClick) {
+                            finish()
+                        }
+                    }
                 }
             }
         }
+
+    }
+
+    private suspend fun getAllWidgetIds(): List<Int> {
+        val installedProviders = AppWidgetManager.getInstance(this).getInstalledProviders().filter {
+            it.provider.packageName == BuildConfig.APPLICATION_ID
+        }
+        Log.i("kyle","total installedProviders = ${installedProviders.size}")
+        return getGlanceIds<GenshinDailyNoteWidget>()
+
     }
 
     private val onHomeClick: () -> Unit = {
@@ -64,16 +90,17 @@ class WidgetsConfigActivity : AppCompatActivity() {
     private val onConfirmClick: (WidgetsConfigModel) -> Unit = {
         lifecycleScope.launch {
             Config.launchTarget = it.targetLaunchApp
+            Config.showUID = it.showUID
 
             val ids = GlanceAppWidgetManager(this@WidgetsConfigActivity).getGlanceIds(
                 GenshinDailyNoteWidget::class.java
             )
-            if (ids.isEmpty()) {
+            val curId = ids.find { GlanceFxxker.getAppWidgetId(it) == mAppWidgetId }
+            if (curId == null) {
                 R.string.add_widget_fialed.toast()
                 finish()
                 return@launch
             }
-            val curId = ids.last()
             GlanceCallbackAction().onRun(this@WidgetsConfigActivity, curId, actionParametersOf())
             val resultIntent = Intent()
             resultIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, mAppWidgetId)
@@ -115,11 +142,26 @@ private fun RootView(
         )
     }) {
         var target by remember { mutableStateOf(launchTargets[0].first) }
+        var showUID by remember { mutableStateOf(Config.showUID) }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(15.dp)
         ) {
+            DefaultCard(
+                text = getString(R.string.widget_ui_config),
+                modifier = Modifier.padding(bottom = 10.dp)
+            ) {
+                Column {
+                    SwitchView(
+                        text = getString(R.string.show_uid),
+                        checked = showUID,
+                        onCheckedChange = { showUID = it }
+                    )
+                }
+
+            }
             DefaultCard(
                 text = getString(R.string.click_widget_launch),
                 modifier = Modifier.padding(bottom = 20.dp)
@@ -145,7 +187,8 @@ private fun RootView(
                 Button(onClick = {
                     onConfirmClick(
                         WidgetsConfigModel(
-                            launchTargets.find { it.first == target }!!.second
+                            launchTargets.find { it.first == target }!!.second,
+                            showUID
                         )
                     )
                 }) {

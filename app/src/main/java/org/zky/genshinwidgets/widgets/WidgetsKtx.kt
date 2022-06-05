@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.compose.ui.unit.TextUnit
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.glance.GlanceId
+import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.*
@@ -27,6 +29,10 @@ suspend fun updateWidget(
             updateState(it.toMutablePreferences())
         }
     }
+}
+
+suspend inline fun <reified T:GlanceAppWidget> Context.getGlanceIds(): List<Int> {
+    return GlanceAppWidgetManager(this).getGlanceIds(T::class.java).map { GlanceFxxker.getAppWidgetId(it) }
 }
 
 fun TextStyle.copy(

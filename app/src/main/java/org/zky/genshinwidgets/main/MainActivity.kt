@@ -12,6 +12,7 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,21 +20,28 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.get
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.ApiCst
 import org.zky.genshinwidgets.webview.WebLoginActivity
 import org.zky.genshinwidgets.res.color
+import org.zky.genshinwidgets.ui.DefaultCard
+import org.zky.genshinwidgets.ui.SettingItemView
 import org.zky.genshinwidgets.utils.*
 import org.zky.genshinwidgets.widgets.Config
+import org.zky.genshinwidgets.widgets.WidgetsConfigActivity
 
 class MainActivity : AppCompatActivity() {
 
@@ -71,15 +79,25 @@ class MainActivity : AppCompatActivity() {
 
     @Composable
     fun MainPage(model: MainViewModel) {
+        val scaffoldState = rememberScaffoldState()
+        val scope = rememberCoroutineScope()
         val cookie = model.cookie.observeAsState("")
         val signInfo = model.signInfo.observeAsState()
         val signReward = model.signReward.observeAsState()
         val userRole = model.roleInfo.observeAsState()
         val showInfoDialog = remember { mutableStateOf(false) }
         Scaffold(
+            scaffoldState = scaffoldState,
             topBar = {
-                MainPageTopBar { showInfoDialog.value = !showInfoDialog.value }
-            }) {
+                MainPageTopBar(
+                    onMenuClick = {
+                        scope.launch { scaffoldState.drawerState.open() }
+                    },
+                    onInfoClick = { showInfoDialog.value = !showInfoDialog.value }
+                )
+            },
+            drawerContent = { MainDrawerView() }
+        ) {
             Column(
                 Modifier
                     .padding(15.dp)
@@ -165,7 +183,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable
+    fun ColumnScope.MainDrawerView() {
+        Image(
+            painter = painterResource(id = R.drawable.bg_drawer_keli),
+            contentDescription = "drawer",
+            modifier = Modifier.fillMaxWidth(),
+            contentScale = ContentScale.FillWidth
+        )
+        SettingItemView(
+            text = getString(R.string.widget_setting),
+            imageRes = R.drawable.ic_baseline_cookie_24
+        ) {
+            startActivity<WidgetsConfigActivity>()
+        }
+    }
+
+    @Composable
     fun VersionDialog(onDismissRequest: () -> Unit) {
+        var crashReport by remember { mutableStateOf(Config.crashReport) }
         AlertDialog(
             onDismissRequest = onDismissRequest,
             title = { Text("${getString(R.string.app_name)} v${getAppVersionName()}") },
@@ -184,15 +219,14 @@ class MainActivity : AppCompatActivity() {
 
                     )
                     Text(text = getString(R.string.permission_info))
-
                     Text(text = getString(R.string.permission_info_network))
                     Text(text = getString(R.string.permission_info_storage))
                     Text(text = getString(R.string.permission_info_wake_app))
                     Text(text = getString(R.string.permission_info_clipboard))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(text = getString(R.string.crash_report))
-                        Switch(checked = Config.crashReport, onCheckedChange = {
-                            Config.crashReport = it
+                        Switch(checked = crashReport, onCheckedChange = {
+                            crashReport = it
                             getString(R.string.restart_app_enable_crash_report).toast()
                         })
                     }
@@ -203,8 +237,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable()
-    private fun MainPageTopBar(onInfoClick: () -> Unit) {
+    private fun MainPageTopBar(onMenuClick: () -> Unit, onInfoClick: () -> Unit) {
         TopAppBar(
+            navigationIcon = {
+                Icon(
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = "menu",
+                    modifier = Modifier
+                        .padding(start = 10.dp)
+                        .clickable(onClick = onMenuClick)
+                )
+            },
             title = { Text(text = getString(R.string.app_name)) },
             actions = {
                 IconButton(onClick = onInfoClick) {

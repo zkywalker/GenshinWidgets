@@ -63,7 +63,8 @@ class GlanceCallbackAction(private val needToast: Boolean = true) : ActionCallba
                     it.toMutablePreferences().apply {
                         val toJson = gameRecord.toJson()
                         this[booleanPreferencesKey("is_login")] = true
-                        this[stringPreferencesKey("data")] = toJson
+                        this[stringPreferencesKey(GenshinDailyNoteWidget.PRE_DATA_ROLE_INFO)] = roleInfo.toJson()
+                        this[stringPreferencesKey(GenshinDailyNoteWidget.PRE_DATA_DAILY_NOTE)] = toJson
                         Log.i("gameRecord = ", toJson)
                     }
                 }

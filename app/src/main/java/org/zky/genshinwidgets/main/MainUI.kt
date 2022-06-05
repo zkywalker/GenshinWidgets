@@ -30,20 +30,6 @@ import org.zky.genshinwidgets.utils.getString
 
 
 @Composable
-public fun ColumnScope.DefaultCard(
-    text: String,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    Text(text = text, modifier = Modifier.padding(bottom = 10.dp), fontSize = 17.sp)
-    Card(modifier.fillMaxWidth()) {
-        Box(Modifier.padding(10.dp)) {
-            content()
-        }
-    }
-}
-
-@Composable
 fun UserRoleView(
     userRole: UserRole?,
     onRefresh: () -> Unit,
