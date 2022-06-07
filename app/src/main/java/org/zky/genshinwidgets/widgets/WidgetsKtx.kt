@@ -1,6 +1,7 @@
 package org.zky.genshinwidgets.widgets
 
 import android.content.Context
+import android.graphics.Bitmap
 import androidx.compose.ui.unit.TextUnit
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.glance.GlanceId
@@ -10,6 +11,11 @@ import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.*
 import androidx.glance.unit.ColorProvider
+import org.zky.genshinwidgets.utils.application
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.FileOutputStream
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,8 +37,13 @@ suspend fun updateWidget(
     }
 }
 
-suspend inline fun <reified T:GlanceAppWidget> Context.getGlanceIds(): List<Int> {
-    return GlanceAppWidgetManager(this).getGlanceIds(T::class.java).map { GlanceFxxker.getAppWidgetId(it) }
+suspend inline fun <reified T : GlanceAppWidget> Context.getGlanceIds(): List<Int> {
+    return GlanceAppWidgetManager(this).getGlanceIds(T::class.java)
+        .map { it.getId() }
+}
+
+fun GlanceId.getId(): Int {
+    return GlanceIdUtils.getId(this)
 }
 
 fun TextStyle.copy(
@@ -50,3 +61,25 @@ fun TextStyle.copy(
     textAlign ?: this.textAlign,
     textDecoration ?: this.textDecoration
 )
+
+fun Bitmap.save(imageName: String): File {
+    val dir =
+        File("${application.cacheDir.absolutePath}${File.separator}files${File.separator}img${File.separator}")
+    if (!dir.exists()) {
+        dir.mkdirs()
+    }
+    val file =
+        File("${application.cacheDir.absolutePath}${File.separator}files${File.separator}img${File.separator}${imageName}")
+    if (file.exists() && file.length() > 0) return file
+    try {
+        val out = FileOutputStream(file)
+        compress(Bitmap.CompressFormat.PNG, 90, out)
+        out.flush()
+        out.close()
+    } catch (e: FileNotFoundException) {
+        e.printStackTrace()
+    } catch (e: IOException) {
+        e.printStackTrace()
+    }
+    return file
+}

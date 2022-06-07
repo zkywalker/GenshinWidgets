@@ -12,12 +12,13 @@ import java.util.*
 class GenshinBBSInterceptor : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
-        val encodedPath = chain.request().url.encodedPath
+        val request = chain.request()
+        val encodedPath = request.url.encodedPath
         Log.i("kyle", "url = $encodedPath")
         if (encodedPath != ApiCst.REQUEST_PATH_SIGN) {
-            return chain.proceed(chain.request())
+            return chain.proceed(request)
         }
-        val builder: Request.Builder = chain.request().newBuilder()
+        val builder: Request.Builder = request.newBuilder()
         val ts = "${Date().time / 1000}"
         val random = "${((Math.random() + 1) * 100000).toInt()}"
         val check = MD5("salt=${ApiCst.BBS_SALT_WEB_OLD}&t=$ts&r=$random")
@@ -40,7 +41,11 @@ class GenshinBBSInterceptor : Interceptor {
                 UUID.nameUUIDFromBytes(loginCookie.toByteArray()).toString().replace("-", "")
                     .uppercase()
             )
-            .addHeader("Cookie", loginCookie)
+        if (request.header("Cookie") == null) {
+            builder.addHeader("Cookie", loginCookie)
+        } else {
+            Log.d("kyle", "already has Cookie: ${request.header("Cookie")}")
+        }
         return chain.proceed(builder.build())
     }
 

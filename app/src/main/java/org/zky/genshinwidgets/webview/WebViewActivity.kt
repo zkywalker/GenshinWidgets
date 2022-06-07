@@ -18,6 +18,10 @@ open class WebViewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_web_view)
+        initView()
+    }
+
+    internal fun initView() {
         val url = onLoadUrl(intent)
         val title = intent.getStringExtra("title")
         if (url.isNullOrEmpty()) {

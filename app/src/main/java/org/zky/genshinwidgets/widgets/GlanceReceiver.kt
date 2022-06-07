@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.zky.genshinwidgets.utils.application
+import org.zky.genshinwidgets.utils.loginCookie
 
 
 class GlanceReceiver : GlanceAppWidgetReceiver() {
@@ -36,17 +37,9 @@ class GlanceReceiver : GlanceAppWidgetReceiver() {
         }
     }
 
-    override fun onUpdate(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        appWidgetIds: IntArray
-    ) {
-        super.onUpdate(context, appWidgetManager, appWidgetIds)
-    }
-
-    override fun onEnabled(context: Context?) {
-        super.onEnabled(context)
-        refresh()
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        Log.i("kyle", "onDeleted: $appWidgetIds")
     }
 
     private fun refresh() {

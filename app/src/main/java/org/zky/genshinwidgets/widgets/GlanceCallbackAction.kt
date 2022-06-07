@@ -3,7 +3,6 @@ package org.zky.genshinwidgets.widgets
 import android.content.Context
 import android.text.TextUtils
 import android.util.Log
-import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
@@ -21,26 +20,41 @@ import org.zky.genshinwidgets.network.Request
 import org.zky.genshinwidgets.utils.*
 import java.util.*
 
-class GlanceCallbackAction(private val needToast: Boolean = true) : ActionCallback {
+class GlanceCallbackAction(
+    private val needToast: Boolean = true
+) :
+    ActionCallback {
 
-    var roleInfoSp: String by PreferenceDelegate(SpCst.KEY_ROLE_INFO, "")
+    private val preferenceDelegate = PreferenceDelegate(SpCst.KEY_ROLE_INFO, "")
+
+    private var roleInfoSp: String by preferenceDelegate
+
+    private val cookieDelegate = PreferenceDelegate(SpCst.KEY_COOKIE, "")
+
+    private var widgetCookieSp by cookieDelegate
 
     override suspend fun onRun(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         withContext(context = Dispatchers.IO) {
-            if (TextUtils.isEmpty(loginCookie)) {
+            //refresh preference key
+            preferenceDelegate.name = "${SpCst.KEY_ROLE_INFO}_${glanceId.getId()}"
+            cookieDelegate.name = "${SpCst.KEY_COOKIE}_${glanceId.getId()}"
+            val cookie = widgetCookieSp
+            Log.d("cookie", "onRun: cookie = $cookie")
+            if (TextUtils.isEmpty(cookie)) {
                 updateWidget(context, glanceId) {
                     it[booleanPreferencesKey("is_login")] = false
                 }
                 return@withContext
             }
             val roleInfo: UserRole = if (roleInfoSp.isNotEmpty()) {
-                roleInfoSp.fromJsonOrNull<UserRole>() ?: Request.getUserRole()?.findGenshinRole()
+                roleInfoSp.fromJsonOrNull<UserRole>() ?: Request.getUserRole(cookie)
+                    ?.findGenshinRole()
             } else {
-                Request.getUserRole()?.findGenshinRole()
+                Request.getUserRole(cookie)?.findGenshinRole()
             } ?: return@withContext
 
             if (parameters[GenshinDailyNoteWidget.ACTION_PARAMETERS_KEY] == ACTION_REQUEST_SIGN) {
-                val sign = Request.sign(roleInfo.game_uid, roleInfo.region)
+                val sign = Request.sign(roleInfo.game_uid, roleInfo.region, cookie)
                 if (sign?.get("code") == "ok") {
                     signDate = format.format(Date())
                     R.string.sign_success.toast()
@@ -48,7 +62,8 @@ class GlanceCallbackAction(private val needToast: Boolean = true) : ActionCallba
             }
 
             val gameRecord =
-                Request.getGameRecord(roleInfo.game_uid, roleInfo.region) ?: return@withContext
+                Request.getGameRecord(roleInfo.game_uid, roleInfo.region, cookie)
+                    ?: return@withContext
             gameRecord.expeditions.forEach {
                 val file = imageUrlToFile(it.avatar_side_icon)
                 if (file != null) {
@@ -58,13 +73,23 @@ class GlanceCallbackAction(private val needToast: Boolean = true) : ActionCallba
                     }
                 }
             }
+            var image = parameters[GenshinDailyNoteWidget.ACTION_PARAMETERS_BG] ?: ""
+            if (TextUtils.isEmpty(image)) {
+                image = Sp.getValue("${SpCst.KEY_IMAGE_BG}_${glanceId.getId()}", "")
+            } else {
+                Sp.setValue("${SpCst.KEY_IMAGE_BG}_${glanceId.getId()}", image)
+            }
             withContext(context = Dispatchers.Main) {
                 updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) {
                     it.toMutablePreferences().apply {
                         val toJson = gameRecord.toJson()
                         this[booleanPreferencesKey("is_login")] = true
-                        this[stringPreferencesKey(GenshinDailyNoteWidget.PRE_DATA_ROLE_INFO)] = roleInfo.toJson()
-                        this[stringPreferencesKey(GenshinDailyNoteWidget.PRE_DATA_DAILY_NOTE)] = toJson
+                        this[stringPreferencesKey(GenshinDailyNoteWidget.PRE_DATA_ROLE_INFO)] =
+                            roleInfo.toJson()
+                        this[stringPreferencesKey(GenshinDailyNoteWidget.PRE_DATA_DAILY_NOTE)] =
+                            toJson
+                        this[stringPreferencesKey(GenshinDailyNoteWidget.PRE_DATA_BG_IMAGE)] =
+                            image
                         Log.i("gameRecord = ", toJson)
                     }
                 }

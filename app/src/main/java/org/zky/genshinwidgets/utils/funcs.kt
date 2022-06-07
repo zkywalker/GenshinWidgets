@@ -1,14 +1,17 @@
 package org.zky.genshinwidgets.utils
 
 import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.net.Uri
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.Looper
-import android.text.TextUtils
+import android.util.DisplayMetrics
 import android.util.Log
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import com.google.gson.Gson
@@ -17,6 +20,13 @@ import org.zky.genshinwidgets.webview.WebViewActivity
 
 
 val mainHandler = Handler(Looper.getMainLooper())
+
+val handlerThread = HandlerThread("handlerThread").apply {
+    start()
+}
+
+val workerHandler = Handler(handlerThread.looper)
+
 
 var spCookie: String by PreferenceDelegate(SpCst.KEY_COOKIE, "")
 
@@ -34,6 +44,10 @@ fun runOnMainThread(runnable: () -> Unit) {
     }
 }
 
+fun runOnWorkerThread(runnable: () -> Unit) {
+    workerHandler.post(runnable)
+}
+
 fun String.toast() {
     runOnMainThread { Toast.makeText(application, this, Toast.LENGTH_SHORT).show() }
 }
@@ -43,6 +57,22 @@ fun Int.toast() {
 }
 
 fun getString(stringRes: Int): String = application.getString(stringRes)
+
+fun dp2px(dp: Int): Int {
+    val wm = application.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+    val display = wm.defaultDisplay
+    val displaymetrics = DisplayMetrics()
+    display.getMetrics(displaymetrics)
+    return (dp * displaymetrics.density + 0.5f).toInt()
+}
+
+fun safeRun(runnable: () -> Unit) {
+    try {
+        runnable()
+    } catch (e: Exception) {
+        Log.e("safeRun", e.toString())
+    }
+}
 
 fun <T> T.toJson(): String = Gson().toJson(this)
 
@@ -71,6 +101,9 @@ fun getAppVersionName(): String {
 
 inline fun <reified T : Activity> Context.startActivity(handle: Intent.() -> Unit = {}) {
     val intent = Intent(this, T::class.java)
+    if (this is Application) {
+        intent.addFlags(FLAG_ACTIVITY_NEW_TASK)
+    }
     intent.handle()
     startActivity(intent)
 }
