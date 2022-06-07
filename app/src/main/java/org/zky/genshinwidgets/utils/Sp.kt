@@ -9,36 +9,34 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.net.URLDecoder
 import java.net.URLEncoder
-import kotlin.reflect.KProperty
 
-class PreferenceDelegate<T>(var name: String, private val default: T) {
-    companion object {
-        private const val file_name = SpCst.DEFAULT_SP_NAME
+object Sp {
 
-        private val prefs: SharedPreferences by lazy {
-            application.applicationContext.getSharedPreferences(file_name, Context.MODE_PRIVATE)
-        }
+    private const val file_name = SpCst.DEFAULT_SP_NAME
 
-        fun clearPreference() {
-            prefs.edit().clear().apply()
-        }
-
-        fun clearPreference(key: String) {
-            prefs.edit().remove(key).apply()
-        }
-
-        fun contains(key: String): Boolean = prefs.contains(key)
-
-        fun getAll(): Map<String, *> = prefs.all
+    private val prefs: SharedPreferences by lazy {
+        application.applicationContext.getSharedPreferences(file_name, Context.MODE_PRIVATE)
     }
 
-    operator fun getValue(thisRef: Any?, property: KProperty<*>): T =
+    fun clearPreference() {
+        prefs.edit().clear().apply()
+    }
+
+    fun clearPreference(key: String) {
+        prefs.edit().remove(key).apply()
+    }
+
+    fun contains(key: String): Boolean = prefs.contains(key)
+
+    fun getAll(): Map<String, *> = prefs.all
+
+    fun <T> getValue(name: String, default: T): T =
         getSharedPreferences(name, default)
 
-    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) =
+    fun <T> setValue(name: String, value: T) =
         putSharedPreferences(name, value)
 
-    private fun putSharedPreferences(name: String, value: T) = with(prefs.edit()) {
+    private fun <T> putSharedPreferences(name: String, value: T) = with(prefs.edit()) {
         when (value) {
             is Long -> putLong(name, value)
             is Int -> putInt(name, value)
@@ -60,7 +58,7 @@ class PreferenceDelegate<T>(var name: String, private val default: T) {
         return result
     }
 
-    private fun getSharedPreferences(name: String, default: T): T = with(prefs) {
+    private fun <T> getSharedPreferences(name: String, default: T): T = with(prefs) {
         val res = when (default) {
             is Long -> getLong(name, default)
             is String -> getString(name, default)
@@ -78,4 +76,5 @@ class PreferenceDelegate<T>(var name: String, private val default: T) {
             return it.readObject() as A
         }
     }
+
 }

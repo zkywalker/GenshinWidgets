@@ -2,31 +2,26 @@ package org.zky.genshinwidgets.widgets
 
 import android.text.TextUtils
 import android.util.Log
+import android.util.SparseArray
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceModifier
+import androidx.glance.LocalGlanceId
 import androidx.glance.action.ActionParameters
-import androidx.glance.action.actionStartActivity
-import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.currentState
-import androidx.glance.layout.Alignment
-import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.size
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.Text
-import org.zky.genshinwidgets.R
-import org.zky.genshinwidgets.main.MainActivity
 import org.zky.genshinwidgets.model.DailyNote
 import org.zky.genshinwidgets.utils.fromJson
-import org.zky.genshinwidgets.utils.getString
+import org.zky.genshinwidgets.utils.fromJsonOrNull
 
 class GenshinDailyNoteWidget : GlanceAppWidget() {
 
@@ -47,21 +42,24 @@ class GenshinDailyNoteWidget : GlanceAppWidget() {
 //            }
 //            return
 //        }
-        val data = preferencesState[stringPreferencesKey("data")] ?: ""
-        Log.i("kyle", "data = $data")
-        Column(GlanceModifier.size(150.dp, 150.dp)) {
-            if (TextUtils.isEmpty(data)) {
-                WidgetMain(null)
-            } else {
-                WidgetMain(data.fromJson<DailyNote>())
-            }
-        }
+        val dailyNote = preferencesState[stringPreferencesKey(PRE_DATA_DAILY_NOTE)] ?: ""
+        val userRole = preferencesState[stringPreferencesKey(PRE_DATA_ROLE_INFO)] ?: ""
+        val image = preferencesState[stringPreferencesKey(PRE_DATA_BG_IMAGE)] ?: ""
+
+        Log.i("kyle", "dailyNote = $dailyNote, userRole = $userRole")
+        WidgetMain(dailyNote.fromJsonOrNull(), userRole.fromJsonOrNull(), image)
     }
 
 
     companion object {
+
+        val PRE_DATA_DAILY_NOTE = "pre_data_daily_note"
+        val PRE_DATA_ROLE_INFO = "pre_data_role_info"
+        val PRE_DATA_BG_IMAGE = "pre_data_image_file"
+
         val ACTION_PARAMETERS_KEY = ActionParameters.Key<String>("parameters_keys")
         val ACTION_PARAMETERS_PACKAGE = ActionParameters.Key<String>("package_name")
+        val ACTION_PARAMETERS_BG = ActionParameters.Key<String>("parameters_bg")
 
         private val SMALL_BOX = DpSize(90.dp, 90.dp)
         private val BIG_BOX = DpSize(180.dp, 180.dp)

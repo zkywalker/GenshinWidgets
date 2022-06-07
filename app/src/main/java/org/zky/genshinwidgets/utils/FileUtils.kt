@@ -3,6 +3,7 @@ package org.zky.genshinwidgets.utils
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.text.TextUtils
 import android.util.DisplayMetrics
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
@@ -32,6 +33,24 @@ fun imageUrlToBitmap(url: String): Bitmap? {
     val uri = FileProvider.getUriForFile(application, "org.zky.genshinwidgets.fileprovider", file)
         ?: return null
     return uri.toImage()
+}
+
+fun fileToBitmap(file: File): Bitmap? {
+    val uri = FileProvider.getUriForFile(application, "org.zky.genshinwidgets.fileprovider", file)
+        ?: return null
+    return uri.toImage()
+}
+
+fun fileToBitmap(file: String?): Bitmap? {
+    if (TextUtils.isEmpty(file)) {
+        return null
+    }
+    try {
+        return fileToBitmap(File(file))
+    } catch (e: Exception) {
+        return null
+    }
+
 }
 
 

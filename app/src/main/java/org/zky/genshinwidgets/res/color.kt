@@ -4,6 +4,8 @@ import androidx.compose.ui.graphics.Color
 
 object color {
 
+    val white_70 = Color(0xB3FFFFFF)
+
     val primary = Color(0xFF30A4FC)
     val highlight = Color(0xFFFF0000)
     val error = Color(0xFFFF0000)

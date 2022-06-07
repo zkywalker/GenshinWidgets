@@ -1,6 +1,8 @@
 package org.zky.genshinwidgets.network
 
 import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -22,6 +24,8 @@ import kotlin.collections.HashMap
 
 /**
  * rtcode: -100 未登录
+ * 10103 新的米游社账号？
+ * -1 Data not exists
  */
 object Request {
 
@@ -45,19 +49,21 @@ object Request {
         .build().create(GenshinApiService::class.java)
 
 
-    suspend fun getUserRole(): GetUserRole? = requestTry { api.getUserRole().handleResponse() }
+    suspend fun getUserRole(cookie: String? = null): GetUserRole? =
+        requestTry { api.getUserRole(cookie).handleResponse() }
 
-    suspend fun getSignReward(): SignReward? = requestTry { api.getSignReward().handleResponse() }
+    suspend fun getSignReward(cookie: String? = null): SignReward? =
+        requestTry { api.getSignReward(cookie).handleResponse() }
 
-    suspend fun getSignInfo(region: String, uid: String): SignInfo? =
-        requestTry { api.getSignInfo(region = region, uid = uid).handleResponse() }
+    suspend fun getSignInfo(region: String, uid: String, cookie: String? = null): SignInfo? =
+        requestTry { api.getSignInfo(region = region, uid = uid, cookie = cookie).handleResponse() }
 
-    suspend fun sign(uid: String, region: String): HashMap<String, Any>? {
+    suspend fun sign(uid: String, region: String, cookie: String? = null): HashMap<String, Any>? {
         val body = SignRequest(
             uid = uid, region = region,
         ).toJson().toRequestBody("application/json".toMediaTypeOrNull())
         return requestTry {
-            api.sign(body).handleResponse {
+            api.sign(body, cookie = cookie).handleResponse {
                 if (it == -5003) {
                     signDate = format.format(Date())
                 }
@@ -66,8 +72,11 @@ object Request {
         }
     }
 
-    suspend fun getGameRecord(roleId: String, server: String): DailyNote? =
-        requestTry { recordApi.getGameRecord(roleId = roleId, server = server).handleResponse() }
+    suspend fun getGameRecord(roleId: String, server: String, cookie: String? = null): DailyNote? =
+        requestTry {
+            recordApi.getGameRecord(roleId = roleId, server = server, cookie = cookie)
+                .handleResponse()
+        }
 
 
     suspend fun <T> requestTry(block: suspend () -> T): T? = try {
@@ -110,8 +119,14 @@ object Request {
     }
 
     suspend fun download(fileUrl: String, saveFile: File) {
-        val request = okhttp3.Request.Builder().url(fileUrl).get().build()
-        okHttpClient.newCall(request).to(saveFile)
+        withContext(Dispatchers.IO) {
+            try {
+                val request = okhttp3.Request.Builder().url(fileUrl).get().build()
+                okHttpClient.newCall(request).to(saveFile)
+            }catch (e :Exception){
+                e.printStackTrace().toString().toast()
+            }
+        }
     }
 
 }

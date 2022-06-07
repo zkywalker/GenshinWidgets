@@ -2,6 +2,7 @@ package org.zky.genshinwidgets.widgets
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Context.ALARM_SERVICE
 import android.content.Intent
@@ -14,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.zky.genshinwidgets.utils.application
+import org.zky.genshinwidgets.utils.loginCookie
 
 
 class GlanceReceiver : GlanceAppWidgetReceiver() {
@@ -35,9 +37,9 @@ class GlanceReceiver : GlanceAppWidgetReceiver() {
         }
     }
 
-    override fun onEnabled(context: Context?) {
-        super.onEnabled(context)
-        refresh()
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        Log.i("kyle", "onDeleted: $appWidgetIds")
     }
 
     private fun refresh() {
@@ -45,6 +47,9 @@ class GlanceReceiver : GlanceAppWidgetReceiver() {
             val ids = GlanceAppWidgetManager(application).getGlanceIds(
                 GenshinDailyNoteWidget::class.java
             )
+            if (ids.isEmpty()){
+                return@launch
+            }
             val curId = ids.last()
             GlanceCallbackAction(false).onRun(application, curId, actionParametersOf())
         }

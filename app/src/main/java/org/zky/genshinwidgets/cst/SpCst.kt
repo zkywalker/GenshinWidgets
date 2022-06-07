@@ -3,6 +3,10 @@ package org.zky.genshinwidgets.cst
 
 object SpCst {
 
+    val KEY_IMAGE_BG: String = "key_image_bg"
+
+    val KEY_SHOW_UID: String= "key_show_uid"
+
     val KEY_CRASH_REPORT: String = "key_crash_report"
 
     val KEY_LAUNCH_TARGET: String = "key_launch_target"

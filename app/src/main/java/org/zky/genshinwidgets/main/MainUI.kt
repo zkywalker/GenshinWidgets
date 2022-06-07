@@ -30,20 +30,6 @@ import org.zky.genshinwidgets.utils.getString
 
 
 @Composable
-public fun ColumnScope.DefaultCard(
-    text: String,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    Text(text = text, modifier = Modifier.padding(bottom = 10.dp), fontSize = 17.sp)
-    Card(modifier.fillMaxWidth()) {
-        Box(Modifier.padding(10.dp)) {
-            content()
-        }
-    }
-}
-
-@Composable
 fun UserRoleView(
     userRole: UserRole?,
     onRefresh: () -> Unit,
@@ -80,22 +66,33 @@ fun UserRoleView(
 fun CookieView(
     cookie: String?,
     onLaunchToCookiePage: () -> Unit,
+    onInputCookie:() -> Unit,
     copyToClipboard: (String) -> Unit,
     clearCookie: () -> Unit,
 ) {
     var showCookie by remember { mutableStateOf(false) }
 
     if (cookie == null || TextUtils.isEmpty(cookie)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = getString(R.string.did_not_get_cookie),
-                modifier = Modifier.padding(end = 10.dp)
-            )
-            Button(onClick = onLaunchToCookiePage) {
-                Text(text = getString(R.string.get_cookie))
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = getString(R.string.did_not_get_cookie),
+                    modifier = Modifier.padding(end = 10.dp)
+                )
+                Button(onClick = onLaunchToCookiePage) {
+                    Text(text = getString(R.string.get_cookie))
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = getString(R.string.already_got_cookie),
+                    modifier = Modifier.padding(end = 10.dp)
+                )
+                Button(onClick = onInputCookie) {
+                    Text(text = getString(R.string.input_cookie))
+                }
             }
         }
-
     } else {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
