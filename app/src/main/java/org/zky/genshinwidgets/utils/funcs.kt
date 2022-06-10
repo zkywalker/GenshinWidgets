@@ -113,6 +113,13 @@ inline fun <reified T : Activity> Activity.startActivityForResult(launcher: Acti
     launcher.launch(intent)
 }
 
+inline fun Activity.startActivityForResult2(
+    launcher: ActivityResultLauncher<Intent>,
+    handle: () -> Intent
+) {
+    launcher.launch(handle())
+}
+
 fun Context.startWebViwActivity(title: String, url: String) {
     val intent = Intent(this, WebViewActivity::class.java)
     intent.putExtra("title", title)

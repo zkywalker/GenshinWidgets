@@ -3,8 +3,6 @@ package org.zky.genshinwidgets.widgets
 import android.text.TextUtils
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.*
@@ -13,7 +11,6 @@ import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.appWidgetBackground
-import androidx.glance.appwidget.cornerRadius
 import androidx.glance.layout.*
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -100,37 +97,32 @@ fun WidgetMain(model: DailyNote?, role: UserRole? = null, image: String?) {
                         ImageProvider(R.drawable.ic_baseline_refresh_24),
                         contentDescription = "refresh",
                         modifier = GlanceModifier
+                            .size(20.dp)
                             .clickable(onClick = action)
                     )
                     // todo its not stable, cuz it will refresh when recompose
                     Text(
-                        text = "${getString(R.string.refrsh_time)}\n${Date().format()}",
+                        text = "${Date().format()}",
                         style = TextStyle(
                             color = ColorProvider(Color.White),
                             fontSize = 10.sp
                         ),
                         modifier = GlanceModifier.padding(bottom = 5.dp)
                     )
+
+                    val imageRes =
+                        if (!TextUtils.isEmpty(signDate) && signDate == format.format(Date())) {
+                            R.drawable.ic_baseline_assignment_turned_in_24_green
+                        } else {
+                            R.drawable.ic_baseline_assignment_turned_in_24
+                        }
                     Image(
-                        ImageProvider(R.drawable.ic_baseline_assignment_turned_in_24),
+                        ImageProvider(imageRes),
                         contentDescription = "sign",
                         modifier = GlanceModifier
-                            .size(20.dp) // this image has no padding, so we need to set size to make it look good
+                            .size(20.dp)
                             .clickable(onClick = actionSign)
                     )
-                    if (!TextUtils.isEmpty(signDate) && signDate == format.format(Date())) {
-                        Text(
-                            text = getString(R.string.has_signed1),
-                            style = finishTextStyle.copy(fontSize = 10.sp)
-                        )
-                    } else {
-                        Text(
-                            text = getString(R.string.did_not_sign),
-                            style = normalTextStyle.copy(fontSize = 10.sp),
-                            modifier = GlanceModifier
-                                .clickable(onClick = actionSign)
-                        )
-                    }
                 }
 
                 Column(modifier = GlanceModifier.fillMaxSize()) {
@@ -171,8 +163,13 @@ fun WidgetMain(model: DailyNote?, role: UserRole? = null, image: String?) {
                         text = model.transformer.getMessage(),
                         style = model.transformer.getTextStyle()
                     )
-                    Row {
-                        model.expeditions.forEach { item -> ExpeditionDetailView(item) }
+                    // spacer to make the bottom of the widget look good
+                    if (model.expeditions.isEmpty()) {
+                        Spacer(GlanceModifier.height(25.dp))
+                    } else {
+                        Row {
+                            model.expeditions.forEach { item -> ExpeditionDetailView(item) }
+                        }
                     }
                     if (Config.showUID && role != null) {
                         Row(

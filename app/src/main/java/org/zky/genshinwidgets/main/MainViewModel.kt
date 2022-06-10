@@ -1,13 +1,10 @@
 package org.zky.genshinwidgets.main
 
 import android.text.TextUtils
-import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.ApiCst
 import org.zky.genshinwidgets.cst.SpCst
@@ -20,7 +17,9 @@ import org.zky.genshinwidgets.utils.*
 
 class MainViewModel : ViewModel() {
 
-    val roleInfo: MutableLiveData<UserRole?> = MutableLiveData()
+    val roleInfo: MutableLiveData<List<UserRole>> = MutableLiveData()
+
+    val currentUseRole: MutableLiveData<UserRole> = MutableLiveData()
 
     var roleInfoSp: String by PreferenceDelegate(SpCst.KEY_ROLE_INFO, "")
 
@@ -30,38 +29,43 @@ class MainViewModel : ViewModel() {
 
     val signReward = MutableLiveData<SignReward>()
 
+    val pageRequesting = MutableLiveData<Boolean>()
+
     fun onPageStart() {
         if (TextUtils.isEmpty(loginCookie)) {
             return
         }
-        if (!loadUserRoleFromLocal()) {
-            viewModelScope.launch {
-                requestUserRole()?.let {
-                    getSignInfo(it)
-                }
+        viewModelScope.launch {
+            pageRequesting.value = true
+            requestUserRole()?.let {
+                getSignInfo(it)
             }
-        } else {
-            getSignInfo(roleInfo.value)
+            pageRequesting.value = false
         }
-    }
-
-    fun loadUserRoleFromLocal(): Boolean {
-        if (roleInfoSp.isNotEmpty()) {
-            roleInfo.value = roleInfoSp.fromJson()
-            return true
-        }
-        return false
     }
 
     suspend fun requestUserRole(): UserRole? {
-        // todo did not consider the case that the user has multiple roles
-        roleInfo.value = Request.getUserRole()?.findGenshinRole()
-        roleInfoSp = if (roleInfo.value == null) "" else roleInfo.value.toJson()
-        return roleInfo.value
+        roleInfo.value = Request.getUserRole()?.list?.filter {
+            it.game_biz == ApiCst.GAME_BIZ_GENSHIN
+        }
+        val roles = roleInfo.value ?: return null
+        if (roles.isEmpty()) {
+            return null
+        }
+        if (TextUtils.isEmpty(roleInfoSp)) {
+            currentUseRole.value = roles[0]
+        } else {
+            val role = roleInfoSp.fromJsonOrNull<UserRole>()
+            currentUseRole.value = roles.find { it.game_uid == role?.game_uid }
+        }
+        roleInfoSp = if (currentUseRole.value == null) "" else currentUseRole.value.toJson()
+        return currentUseRole.value
     }
 
     fun getSignInfo(role: UserRole?) {
         viewModelScope.launch {
+            pageRequesting.value = true
+
             var useRole = role
             if (useRole == null) {
                 useRole = requestUserRole() ?: return@launch
@@ -69,6 +73,7 @@ class MainViewModel : ViewModel() {
             signReward.value = Request.getSignReward()
             signInfo.value =
                 Request.getSignInfo(region = useRole.region, uid = useRole.game_uid)
+            pageRequesting.value = false
         }
     }
 
@@ -86,6 +91,12 @@ class MainViewModel : ViewModel() {
             }
             getSignInfo(role)
         }
+    }
+
+    fun onSelectRole(it: UserRole) {
+        currentUseRole.value = it
+        roleInfoSp = it.toJson()
+        getSignInfo(it)
     }
 
 } 

@@ -7,6 +7,8 @@
         <entry key="app/src/main/res/drawable/bg_widget_def_c14.xml" value="0.372" />
         <entry key="app/src/main/res/drawable/bg_widget_item_explored.xml" value="0.3745" />
         <entry key="app/src/main/res/drawable/bg_widget_item_exploring.xml" value="0.3745" />
+        <entry key="app/src/main/res/drawable/ic_baseline_assignment_turned_in_24.xml" value="0.372" />
+        <entry key="app/src/main/res/drawable/ic_baseline_assignment_turned_in_24_green.xml" value="0.372" />
         <entry key="app/src/main/res/drawable/ic_baseline_assistant_24.xml" value="0.2145" />
         <entry key="app/src/main/res/drawable/ic_baseline_assistant_24_b.xml" value="0.2145" />
         <entry key="app/src/main/res/drawable/ic_baseline_cookie_24.xml" value="0.2715" />
@@ -16,7 +18,7 @@
         <entry key="app/src/main/res/drawable/shape_cricle.xml" value="0.2145" />
         <entry key="app/src/main/res/drawable/widget_background.xml" value="0.2285" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.2749094202898551" />
-        <entry key="app/src/main/res/layout/activity_web_view.xml" value="0.75" />
+        <entry key="app/src/main/res/layout/activity_web_view.xml" value="0.732080723729993" />
         <entry key="app/src/main/res/layout/activity_web_view2.xml" value="0.5479166666666667" />
         <entry key="app/src/main/res/layout/activity_widgets_config.xml" value="0.2625" />
         <entry key="app/src/main/res/layout/appwidget_initial_layout.xml" value="0.26145833333333335" />

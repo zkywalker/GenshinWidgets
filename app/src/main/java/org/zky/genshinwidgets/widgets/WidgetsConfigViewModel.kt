@@ -5,8 +5,8 @@ import android.text.TextUtils
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import org.zky.genshinwidgets.cst.ApiCst
 import org.zky.genshinwidgets.cst.SpCst
-import org.zky.genshinwidgets.main.findGenshinRole
 import org.zky.genshinwidgets.model.UserRole
 import org.zky.genshinwidgets.network.Request
 import org.zky.genshinwidgets.utils.*
@@ -14,6 +14,17 @@ import java.io.File
 
 
 class WidgetsConfigViewModel : ViewModel() {
+
+    val localPickImageFile: MutableLiveData<String> = MutableLiveData()
+
+    val historyPickImage: List<String> by lazy {
+        val history = Sp.getValue(SpCst.KEY_HISTORY_PICK_IMAGES, "")
+        if (TextUtils.isEmpty(history)) {
+            listOf("https://gw.alicdn.com/imgextra/i1/O1CN01wAe0EH1pUlFsEnT58_!!6000000005364-0-tps-747-499.jpg")
+        } else {
+            history.split(",")
+        }
+    }
 
     val widgetImageAlpha = MutableLiveData<Float>()
 
@@ -31,12 +42,26 @@ class WidgetsConfigViewModel : ViewModel() {
 
     var widgetCookieSp by cookieDelegate
 
-    val roleInfo: MutableLiveData<UserRole?> = MutableLiveData()
+    val roleInfo: MutableLiveData<List<UserRole>> = MutableLiveData()
+
+    val currentUseRole: MutableLiveData<UserRole> = MutableLiveData()
+
+    val pageRequesting = MutableLiveData<Boolean>()
+
+    val pageLoading =  MutableLiveData<Boolean>()
 
     suspend fun requestUserRole(cookie: String? = null): UserRole? {
-        // todo did not consider the case that the user has multiple roles
-        roleInfo.value = Request.getUserRole(cookie)?.findGenshinRole()
-        return roleInfo.value
+        pageRequesting.value = true
+        roleInfo.value = Request.getUserRole(cookie)?.list?.filter {
+            it.game_biz == ApiCst.GAME_BIZ_GENSHIN
+        }
+        val roles = roleInfo.value ?: return null
+        if (roles.isEmpty()) {
+            return null
+        }
+        currentUseRole.value = roles[0]
+        pageRequesting.value = false
+        return currentUseRole.value
     }
 
     fun refreshLocalWidgetCookie() {
