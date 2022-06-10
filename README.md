@@ -4,7 +4,7 @@
 
 ![android](https://img.shields.io/badge/platform-Android-green)
 ![ui](https://img.shields.io/badge/UI-Jetpack%20Compose-brightgreen)
-![version](https://img.shields.io/badge/version-v0.0.1-orange)
+![version](https://img.shields.io/badge/version-v0.03-orange)
 ![license](https://img.shields.io/badge/license-MIT-blue)
 
 功能
