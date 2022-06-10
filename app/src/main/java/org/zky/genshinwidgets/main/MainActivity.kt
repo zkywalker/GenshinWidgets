@@ -3,8 +3,6 @@ package org.zky.genshinwidgets.main
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
-import android.graphics.Color.alpha
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.TextUtils
@@ -22,7 +20,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -36,16 +33,16 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.get
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.launch
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.ApiCst
 import org.zky.genshinwidgets.webview.WebLoginActivity
 import org.zky.genshinwidgets.res.color
 import org.zky.genshinwidgets.ui.DefaultCard
 import org.zky.genshinwidgets.ui.SettingItemView
+import org.zky.genshinwidgets.ui.SpannerView
 import org.zky.genshinwidgets.utils.*
+import org.zky.genshinwidgets.webview.CookieInputDialog
 import org.zky.genshinwidgets.widgets.Config
-import java.io.File
 import org.zky.genshinwidgets.widgets.WidgetsConfigActivity
 
 class MainActivity : AppCompatActivity() {
@@ -94,9 +91,13 @@ class MainActivity : AppCompatActivity() {
         val cookie = model.cookie.observeAsState("")
         val signInfo = model.signInfo.observeAsState()
         val signReward = model.signReward.observeAsState()
-        val userRole = model.roleInfo.observeAsState()
+        val userRoles = model.roleInfo.observeAsState()
+        val userRole = model.currentUseRole.observeAsState()
         val showInfoDialog = remember { mutableStateOf(false) }
         val showCookieInputDialog = remember { mutableStateOf(false) }
+        val showSpannerDialog = remember { mutableStateOf(false) }
+        val pageRequesting = model.pageRequesting.observeAsState()
+
         Scaffold(
             scaffoldState = scaffoldState,
             topBar = {
@@ -114,21 +115,73 @@ class MainActivity : AppCompatActivity() {
                     .padding(15.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                if (!TextUtils.isEmpty(cookie.value)) {
-                    DefaultCard(
-                        text = "${getString(R.string.hello_traveler)} ${userRole.value?.nickname ?: ""} Lv.${userRole.value?.level ?: "?"}",
-                        Modifier.padding(bottom = 10.dp)
-                    ) {
-                        UserRoleView(
-                            userRole = userRole.value,
-                            onRefresh = { viewModel.onPageStart() },
-                            copyUid = ::copyToClipboard
+                val userRoleList = userRoles.value
+                when {
+                    pageRequesting.value == true -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(100.dp), contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    TextUtils.isEmpty(cookie.value) -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(100.dp), contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = getString(R.string.login_plz))
+                        }
+                    }
+                    userRoleList?.isNotEmpty() != true -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(100.dp), contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = getString(R.string.seems_you_donot_have_role))
+                        }
+                    }
+                    else -> {
+                        SpannerView(
+                            modifier = Modifier.padding(bottom = 10.dp),
+                            expanded = showSpannerDialog.value,
+                            onVisibilityChange = { s -> showSpannerDialog.value = s },
+                            data = userRoleList,
+                            defaultIndex = userRoleList.indexOf(userRole.value),
+                            itemContentGetter = { i, it ->
+                                val text =
+                                    if (i == -1) {
+                                        "${getString(R.string.hello_traveler)} ${it?.nickname ?: ""}(${it?.region_name} Lv.${it?.level ?: "?"})"
+                                    } else {
+                                        "${it?.nickname ?: ""}(${it?.region_name} Lv.${it?.level ?: "?"})"
+                                    }
+                                Text(
+                                    text = text,
+                                    fontSize = 17.sp
+                                )
+                            },
+                            onItemClick = { i, it ->
+                                viewModel.onSelectRole(it)
+                            }
                         )
+                        DefaultCard(
+                            modifier = Modifier.padding(bottom = 10.dp)
+                        ) {
+                            UserRoleView(
+                                userRole = userRole.value,
+                                onRefresh = { viewModel.onPageStart() },
+                                copyUid = ::copyToClipboard
+                            )
+                        }
                     }
                 }
+
                 DefaultCard(
                     text = getString(R.string.cookie_info),
-                    Modifier.padding(bottom = 10.dp)
+                    modifier = Modifier.padding(bottom = 10.dp)
                 ) {
                     CookieView(
                         cookie = cookie.value,
@@ -141,19 +194,19 @@ class MainActivity : AppCompatActivity() {
                 if (!TextUtils.isEmpty(cookie.value)) {
                     DefaultCard(
                         text = getString(R.string.genshin_sign),
-                        Modifier.padding(bottom = 10.dp)
+                        modifier = Modifier.padding(bottom = 10.dp)
                     ) {
                         SignView(
                             signInfo = signInfo.value,
                             signReward = signReward.value,
-                            onRefreshSignInfo = { viewModel.getSignInfo(viewModel.roleInfo.value) },
-                            onRequestSign = { viewModel.sign(viewModel.roleInfo.value) }
+                            onRefreshSignInfo = { viewModel.getSignInfo(viewModel.currentUseRole.value) },
+                            onRequestSign = { viewModel.sign(viewModel.currentUseRole.value) }
                         )
                     }
                 }
                 DefaultCard(
                     text = getString(R.string.observation_pivot),
-                    Modifier.padding(bottom = 10.dp)
+                    modifier = Modifier.padding(bottom = 10.dp)
                 ) {
                     ObservationPivotView(
                         onClickTodayMaterial = {
@@ -178,7 +231,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 DefaultCard(
                     text = getString(R.string.start_app),
-                    Modifier.padding(bottom = 10.dp)
+                    modifier = Modifier.padding(bottom = 10.dp)
                 ) {
                     JumpAppView(
                         onClickGenshin = { launchApp(ApiCst.APP_PACKAGE_NAME_GENSHIN) },
@@ -195,7 +248,7 @@ class MainActivity : AppCompatActivity() {
                 CookieInputDialog(
                     onDismissRequest = { showCookieInputDialog.value = false },
                     onSubmit = {
-                        checkCookie(cookie.value)
+                        checkCookie(it)
                     })
             }
         }
@@ -243,6 +296,7 @@ class MainActivity : AppCompatActivity() {
                             crashReport = it
                         })
                     }
+
                     Divider(
                         Modifier
                             .padding(top = 5.dp, bottom = 5.dp)

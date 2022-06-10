@@ -9,11 +9,29 @@ import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
 import org.zky.genshinwidgets.R
 
+
 open class WebViewActivity : AppCompatActivity() {
 
     lateinit var progressBar: ProgressBar
 
     lateinit var webView: WebView
+
+    val mapOf = mapOf(
+        "x-rpc-app_version" to "2.28.1",
+        "user-agent" to "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.28.1",
+        "test" to "hello"
+    )
+
+    val js = "javascript:(function() {\n" +
+            "    var script=document.createElement('script');\n" +
+            "    script.setAttribute('type','text/javascript');\n" +
+            "    script.setAttribute('src', 'https://webstatic.mihoyo.com/dora/lib/vconsole/3.2.0/vconsole.min.js');\n" +
+            "    script.onload = function(){\n" +
+            "        var vConsole = new VConsole();\n" +
+            "        console.log('vconsole load suc~' );\n" +
+            "    };\n" +
+            "    document.getElementsByTagName('head')[0].appendChild(script);\n" +
+            "})()"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,7 +78,7 @@ open class WebViewActivity : AppCompatActivity() {
                 override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                     Log.i("webview", "shouldOverrideUrlLoading = $url")
                     if (url.startsWith("http")) {
-                        view.loadUrl(url)
+                        view.loadUrl(url, mapOf)
                     }
                     return true
                 }
@@ -72,7 +90,7 @@ open class WebViewActivity : AppCompatActivity() {
                     Log.i("webview", "shouldOverrideUrlLoading = ${request.url}")
 
                     if (request.url.scheme?.startsWith("http") == true) {
-                        view.loadUrl(request.url.toString())
+                        view.loadUrl(request.url.toString(), mapOf)
                     }
                     return true
                 }
@@ -98,8 +116,18 @@ open class WebViewActivity : AppCompatActivity() {
             setNeedInitialFocus(true)
             WebView.setWebContentsDebuggingEnabled(true)
             mixedContentMode = WebSettings.LOAD_NORMAL
+
+            userAgentString =
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.28.1"
         }
+        webView.addJavascriptInterface(WebViewBridgeHandler(), "MiHoYoJSInterface")
+        webView.addJavascriptInterface(WebViewBridgeHandler(), "MiHoYoSDKInvoke")
         webView.loadUrl(url)
+//        webView.postDelayed({
+//            webView.evaluateJavascript(js) {
+//                Log.i("WebViewActivity", "evaluateJavascript: $it")
+//            }
+//        }, 2000)
     }
 
     open fun onLoadUrl(intent: Intent?): String? = intent?.getStringExtra("url")
@@ -118,5 +146,7 @@ open class WebViewActivity : AppCompatActivity() {
         }
         return false
     }
+
+
 
 }

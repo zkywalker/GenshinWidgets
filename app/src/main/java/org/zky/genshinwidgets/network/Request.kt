@@ -118,13 +118,15 @@ object Request {
         fos.close()
     }
 
-    suspend fun download(fileUrl: String, saveFile: File) {
-        withContext(Dispatchers.IO) {
+    suspend fun download(fileUrl: String, saveFile: File): Boolean {
+        return withContext(Dispatchers.IO) {
             try {
                 val request = okhttp3.Request.Builder().url(fileUrl).get().build()
                 okHttpClient.newCall(request).to(saveFile)
-            }catch (e :Exception){
+                return@withContext true
+            } catch (e: Exception) {
                 e.printStackTrace().toString().toast()
+                return@withContext false
             }
         }
     }

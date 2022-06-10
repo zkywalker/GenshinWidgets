@@ -2,7 +2,9 @@ package org.zky.genshinwidgets.widgets
 
 import android.appwidget.AppWidgetManager
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.TextUtils
@@ -20,7 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -29,41 +31,54 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.glance.action.actionParametersOf
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.get
 import androidx.lifecycle.lifecycleScope
+import coil.compose.rememberImagePainter
 import com.google.accompanist.flowlayout.FlowRow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.ApiCst
-import org.zky.genshinwidgets.model.UserRole
+import org.zky.genshinwidgets.cst.SpCst
 import org.zky.genshinwidgets.model.WidgetsConfigModel
 import org.zky.genshinwidgets.network.Request
 import org.zky.genshinwidgets.res.color
+import org.zky.genshinwidgets.ui.*
 import org.zky.genshinwidgets.utils.*
 import org.zky.genshinwidgets.webview.WebLoginActivity
 import java.io.File
-import org.zky.genshinwidgets.ui.DefaultCard
-import org.zky.genshinwidgets.ui.SwitchView
 import org.zky.genshinwidgets.utils.BitmapFillet.CORNER_ALL
 import org.zky.genshinwidgets.utils.getString
 import org.zky.genshinwidgets.utils.loginCookie
 import org.zky.genshinwidgets.utils.toast
+import org.zky.genshinwidgets.webview.CookieInputDialog
+import java.io.FileOutputStream
 
 class WidgetsConfigActivity : AppCompatActivity() {
 
     private lateinit var viewModel: WidgetsConfigViewModel
 
+    private val showInputDialog = mutableStateOf(false)
+
     private lateinit var launcher: ActivityResultLauncher<Intent>
 
     private val activityResultCallback: ActivityResultCallback<ActivityResult> =
         ActivityResultCallback {
+            val fileUri = it.data?.data
+            // unstable code
+            if (fileUri != null) {
+                viewModel.localPickImageFile.value = fileUri.toString()
+                return@ActivityResultCallback
+            }
             Log.i("kyle", "got cookie:${it.data?.getStringExtra("cookie")}")
             val cookie = it.data?.getStringExtra("cookie") ?: return@ActivityResultCallback
             checkCookie(cookie)
@@ -71,10 +86,6 @@ class WidgetsConfigActivity : AppCompatActivity() {
                 viewModel.requestUserRole(cookie)
             }
         }
-
-    private val showInputDialog = mutableStateOf(false)
-
-    private lateinit var widgetIds: List<Int>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,14 +108,9 @@ class WidgetsConfigActivity : AppCompatActivity() {
             viewModel.requestUserRole(loginCookie)
         }
         setContent {
-            val appWidgetId = viewModel.appWidgetId.observeAsState()
-            val cookie = viewModel.widgetCookie.observeAsState()
-            val userRole = viewModel.roleInfo.observeAsState()
+
             MaterialTheme(colors = MaterialTheme.colors.copy(primary = color.primary)) {
                 RootView(
-                    widgetId = appWidgetId.value ?: AppWidgetManager.INVALID_APPWIDGET_ID,
-                    cookie = cookie.value,
-                    role = userRole.value,
                     onConfirmClick = onConfirmClick,
                     onJumpToLoginClick = onLoginClick,
                     onInputCookieClick = onInputCookieClick,
@@ -123,6 +129,199 @@ class WidgetsConfigActivity : AppCompatActivity() {
                         }
                     )
                 }
+            }
+        }
+    }
+
+    @Composable
+    private fun RootView(
+        onConfirmClick: (WidgetsConfigModel) -> Unit,
+        onJumpToLoginClick: () -> Unit,
+        onInputCookieClick: () -> Unit,
+        onValueChange: (File?, Dp?, Float?) -> Unit,
+        onBackClick: () -> Unit,
+    ) {
+        val appWidgetId = viewModel.appWidgetId.observeAsState()
+        val cookie = viewModel.widgetCookie.observeAsState()
+        val userRoles = viewModel.roleInfo.observeAsState()
+        val userRole = viewModel.currentUseRole.observeAsState()
+        val pageRequesting = viewModel.pageRequesting.observeAsState()
+        val pageLoading = viewModel.pageLoading.observeAsState()
+        var target by remember { mutableStateOf(launchTargets[0].first) }
+        var showUID by remember { mutableStateOf(Config.showUID) }
+        var showBgConfig by remember { mutableStateOf(false) }
+        val showSpannerDialog = remember { mutableStateOf(false) }
+        val image = viewModel.localPickImageFile.observeAsState()
+        val historyPickImage = viewModel.historyPickImage
+
+        val userRoleList = userRoles.value
+        Log.i("kyle", "userRole:$userRole")
+        Scaffold(topBar = {
+            TopAppBar(
+                title = { Text(text = org.zky.genshinwidgets.utils.getString(R.string.config_widget)) },
+                navigationIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowBack,
+                        contentDescription = "back",
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .clickable(onClick = onBackClick)
+                    )
+                }
+            )
+        }) {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .fillMaxSize()
+                    .padding(15.dp)
+            ) {
+                if (TextUtils.isEmpty(cookie.value)) {
+                    Button(onJumpToLoginClick) {
+                        Text(org.zky.genshinwidgets.utils.getString(R.string.login_plz))
+                    }
+                } else if (appWidgetId.value == AppWidgetManager.INVALID_APPWIDGET_ID) {
+                    Text(org.zky.genshinwidgets.utils.getString(R.string.did_not_add_widget))
+                } else {
+                    val role = userRole.value
+                    if (role != null) {
+                        when {
+                            pageRequesting.value == true -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(100.dp), contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
+                            TextUtils.isEmpty(cookie.value) -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(100.dp), contentAlignment = Alignment.Center
+                                ) {
+                                    Text(text = getString(R.string.login_plz))
+                                }
+                            }
+                            userRoleList?.isNotEmpty() != true -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(100.dp), contentAlignment = Alignment.Center
+                                ) {
+                                    Text(text = getString(R.string.seems_you_donot_have_role))
+                                }
+                            }
+                            else -> {
+                                SpannerView(
+                                    modifier = Modifier.padding(bottom = 10.dp),
+                                    expanded = showSpannerDialog.value,
+                                    onVisibilityChange = { s -> showSpannerDialog.value = s },
+                                    data = userRoleList,
+                                    defaultIndex = userRoleList.indexOf(userRole.value),
+                                    itemContentGetter = { i, it ->
+                                        Text(
+                                            text = "${it?.nickname ?: ""}\n${it?.region_name} Lv.${it?.level ?: "?"} UID:${it?.game_uid ?: "?"}",
+                                            fontSize = 17.sp
+                                        )
+                                    },
+                                    onItemClick = { i, it ->
+                                        viewModel.currentUseRole.value = it
+                                    }
+                                )
+                            }
+                        }
+                        DefaultCard(Modifier.padding(bottom = 10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    org.zky.genshinwidgets.utils.getString(R.string.use_other_account),
+                                    modifier = Modifier.padding(10.dp)
+                                )
+                                Button(onJumpToLoginClick, modifier = Modifier.padding(10.dp)) {
+                                    Text(org.zky.genshinwidgets.utils.getString(R.string.login))
+                                }
+                                Button(onInputCookieClick, modifier = Modifier.padding(10.dp)) {
+                                    Text(org.zky.genshinwidgets.utils.getString(R.string.by_input_cookie))
+                                }
+                            }
+                        }
+                    }
+                    DefaultCard(
+                        text = org.zky.genshinwidgets.utils.getString(R.string.widget_ui_config),
+                        modifier = Modifier.padding(bottom = 10.dp)
+                    ) {
+                        Column {
+                            Row {
+                                SwitchView(
+                                    text = org.zky.genshinwidgets.utils.getString(R.string.show_uid),
+                                    checked = showUID,
+                                    onCheckedChange = { showUID = it }
+                                )
+                                SwitchView(
+                                    text = org.zky.genshinwidgets.utils.getString(R.string.config_bg),
+                                    checked = showBgConfig,
+                                    onCheckedChange = {
+                                        showBgConfig = it
+                                        if (!showBgConfig) {
+                                            onValueChange(null, null, null)
+                                        }
+                                    })
+                            }
+                            if (showBgConfig) {
+                                PreviewConfigWidgetView(
+                                    image.value ?: "",
+                                    onInputChange = { viewModel.localPickImageFile.value = it },
+                                    historyImage = historyPickImage,
+                                    onSelectFileClick = {
+                                        startActivityForResult2(launcher) {
+                                            val intent = Intent(Intent.ACTION_GET_CONTENT)
+                                            intent.type = "image/*"
+                                            intent.addCategory(Intent.CATEGORY_OPENABLE)
+                                            intent
+                                        }
+                                    }
+                                ) { f, c, a ->
+                                    viewModel.widgetImageFile.value = f
+                                    viewModel.widgetImageCorner.value = c
+                                    viewModel.widgetImageAlpha.value = a
+                                }
+                            }
+                        }
+
+                    }
+                    DefaultCard(
+                        text = org.zky.genshinwidgets.utils.getString(R.string.click_widget_launch),
+                        modifier = Modifier.padding(bottom = 20.dp)
+                    ) {
+                        FlowRow {
+                            launchTargets.forEach {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(selected = target == it.first, onClick = {
+                                        target = it.first
+                                    })
+                                    Text(text = it.first)
+                                }
+                            }
+                        }
+                    }
+                    Button(onClick = {
+                        onConfirmClick(
+                            WidgetsConfigModel(
+                                launchTargets.find { it.first == target }!!.second,
+                                showUID
+                            )
+                        )
+                    }) {
+                        Text(org.zky.genshinwidgets.utils.getString(R.string.save_config))
+                    }
+                }
+            }
+        }
+
+        if (pageLoading.value == true) {
+            LoadingView {
+                viewModel.pageLoading.value = false
             }
         }
     }
@@ -151,6 +350,7 @@ class WidgetsConfigActivity : AppCompatActivity() {
 
     private val onConfirmClick: (WidgetsConfigModel) -> Unit = {
         lifecycleScope.launch {
+            viewModel.pageLoading.value = true
             Config.launchTarget = it.targetLaunchApp
             Config.showUID = it.showUID
 
@@ -160,6 +360,7 @@ class WidgetsConfigActivity : AppCompatActivity() {
             val curId = ids.find { it.getId() == viewModel.appWidgetId.value }
             if (curId == null) {
                 R.string.add_widget_fialed.toast()
+                viewModel.pageLoading.value = false
                 finish()
                 return@launch
             }
@@ -179,13 +380,33 @@ class WidgetsConfigActivity : AppCompatActivity() {
                         val save = decodeResource.save("bg_2x2_${System.currentTimeMillis()}.png")
                         if (save.exists() && save.length() > 0) {
                             imageFile = save.absolutePath
+                            val history = viewModel.historyPickImage.toMutableList()
+                            if (history.size == 6) {
+                                history.removeLast()
+                            }
+                            val absolutePath = viewModel.widgetImageFile.value!!.absolutePath
+                            if (!history.contains(absolutePath)) {
+                                history.add(0, absolutePath)
+                            }
+                            val string = StringBuilder()
+                            history.forEach {
+                                if (string.isNotEmpty()) {
+                                    string.append(",")
+                                }
+                                string.append(it)
+                            }
+                            Sp.setValue(SpCst.KEY_HISTORY_PICK_IMAGES, string.toString())
                         } else {
                             R.string.save_bg_error.toast()
                         }
                     }
-
                 }
             }
+
+            Sp.setValue(
+                "${SpCst.KEY_ROLE_INFO}_${viewModel.appWidgetId.value}",
+                viewModel.currentUseRole.value.toJson()
+            )
             GlanceCallbackAction().onRun(
                 this@WidgetsConfigActivity,
                 curId,
@@ -194,6 +415,7 @@ class WidgetsConfigActivity : AppCompatActivity() {
             val resultIntent = Intent()
             resultIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, viewModel.appWidgetId.value)
             setResult(RESULT_OK, resultIntent)
+            viewModel.pageLoading.value = false
             finish()
             // todo auto refresh seems not work when app died -_-
 //            GlanceReceiver.startRefreshAlarm(application, WidgetsConfig.autoRefreshMs)
@@ -209,170 +431,132 @@ val launchTargets = arrayOf(
     getString(R.string.miyoushe) to ApiCst.APP_PACKAGE_NAME_BBS,
 )
 
+//"https://gw.alicdn.com/imgextra/i1/O1CN01wAe0EH1pUlFsEnT58_!!6000000005364-0-tps-747-499.jpg"
 @Composable
-private fun RootView(
-    widgetId: Int,
-    cookie: String?,
-    role: UserRole?,
-    onConfirmClick: (WidgetsConfigModel) -> Unit,
-    onJumpToLoginClick: () -> Unit,
-    onInputCookieClick: () -> Unit,
-    onValueChange: (File?, Dp?, Float?) -> Unit,
-    onBackClick: () -> Unit,
-) {
-    Scaffold(topBar = {
-        TopAppBar(
-            title = { Text(text = getString(R.string.config_widget)) },
-            navigationIcon = {
-                Icon(
-                    imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "back",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .clickable(onClick = onBackClick)
-                )
-            }
-        )
-    }) {
-        var target by remember { mutableStateOf(launchTargets[0].first) }
-        var showUID by remember { mutableStateOf(Config.showUID) }
-        var showBgConfig by remember { mutableStateOf(false) }
-
-        Column(
-            modifier = Modifier
-                .verticalScroll(rememberScrollState())
-                .fillMaxSize()
-                .padding(15.dp)
-        ) {
-            if (TextUtils.isEmpty(cookie)) {
-                Button(onJumpToLoginClick) {
-                    Text(getString(R.string.login_plz))
-                }
-            } else if (widgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
-                Text(getString(R.string.did_not_add_widget))
-            } else {
-                if (role != null) {
-                    DefaultCard(
-                        text = "${role.nickname}(UID:${role.game_uid})",
-                        modifier = Modifier.padding(bottom = 10.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                getString(R.string.use_other_account),
-                                modifier = Modifier.padding(10.dp)
-                            )
-                            Button(onJumpToLoginClick, modifier = Modifier.padding(10.dp)) {
-                                Text(getString(R.string.login))
-                            }
-                            Button(onInputCookieClick, modifier = Modifier.padding(10.dp)) {
-                                Text(getString(R.string.by_input_cookie))
-                            }
-                        }
-                    }
-                }
-                DefaultCard(
-                    text = getString(R.string.widget_ui_config),
-                    modifier = Modifier.padding(bottom = 10.dp)
-                ) {
-                    Column {
-                        Row {
-                            SwitchView(
-                                text = getString(R.string.show_uid),
-                                checked = showUID,
-                                onCheckedChange = { showUID = it }
-                            )
-                            SwitchView(
-                                text = getString(R.string.config_bg),
-                                checked = showBgConfig,
-                                onCheckedChange = {
-                                    showBgConfig = it
-                                    if (!showBgConfig) {
-                                        onValueChange(null, null, null)
-                                    }
-                                })
-                        }
-                        if (showBgConfig) {
-                            PreviewWidgetView { f, c, a ->
-                                if (showBgConfig) {
-                                    onValueChange(f, c, a)
-                                }
-                            }
-                        }
-                    }
-
-                }
-                DefaultCard(
-                    text = getString(R.string.click_widget_launch),
-                    modifier = Modifier.padding(bottom = 20.dp)
-                ) {
-                    FlowRow {
-                        launchTargets.forEach {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(selected = target == it.first, onClick = {
-                                    target = it.first
-                                })
-                                Text(text = it.first)
-                            }
-                        }
-                    }
-                }
-                Button(onClick = {
-                    onConfirmClick(
-                        WidgetsConfigModel(
-                            launchTargets.find { it.first == target }!!.second,
-                            showUID
-                        )
-                    )
-                }) {
-                    Text(getString(R.string.save_config))
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-fun PreviewWidgetView(
-    onValueChange: (File, Dp, Float) -> Unit
+fun PreviewConfigWidgetView(
+    imageUrl: String,
+    onInputChange: (String) -> Unit,
+    historyImage: List<String>,
+    onSelectFileClick: () -> Unit,
+    onValueChange: (File, Dp, Float) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     var con by remember { mutableStateOf(0.5f) }
     var alpha by remember { mutableStateOf(0.5f) }
-    val cornerFuc: (Float) -> Dp = { (it * 20 + 5).dp }
+    val cornerFuc: (Float) -> Dp = { (it * 30 + 5).dp }
     val alphaFuc: (Float) -> Float = { it * 0.7f + 0.3f }
     var imageFile by remember { mutableStateOf<File?>(null) }
-    var imageUrl by remember { mutableStateOf("https://gw.alicdn.com/imgextra/i1/O1CN01wAe0EH1pUlFsEnT58_!!6000000005364-0-tps-747-499.jpg") }
-    TextField(value = imageUrl, onValueChange = { imageUrl = it })
-    Button(onClick = {
+    var showPop by remember { mutableStateOf(false) }
+
+    val onLoadImageClick: () -> Unit = {
         scope.launch {
             if (TextUtils.isEmpty(imageUrl)) {
                 return@launch
             }
-            val urlToFile = imageUrlToFile(imageUrl)
+            val handler = imageHandlers.find {
+                it.handle(imageUrl)
+            }
+            if (handler == null) {
+                getString(R.string.input_error).toast()
+                return@launch
+            }
+            val urlToFile = handler.getImageFile()
             if (urlToFile != null && urlToFile.exists()) {
                 urlToFile.createNewFile()
             }
-            if (urlToFile?.length() == 0L) {
-                Request.download(imageUrl, urlToFile)
-            }
+            handler.loadImage()
             imageFile = urlToFile
             onValueChange(imageFile!!, cornerFuc(con), alphaFuc(alpha))
         }
-    }) {
-        Text(text = "加载网络图片")
     }
+    Box {
+        TextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = imageUrl,
+            onValueChange = onInputChange,
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Filled.ArrowDropDown,
+                    contentDescription = "history image",
+                    modifier = Modifier.clickable { showPop = true }
+                )
+            })
+        DropdownMenu(
+            expanded = showPop,
+            onDismissRequest = { showPop = false }) {
+            historyImage.forEach {
+                DropdownMenuItem(onClick = {
+                    onInputChange(it)
+                    showPop = false
+                }) {
+                    if (CacheImageHandler.handle(it)) {
+                        val imageBitmap =
+                            remember { CacheImageHandler.getBitmap()?.asImageBitmap() }
+                        if (imageBitmap != null) {
+                            Image(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(RoundedCornerShape(5.dp)),
+                                bitmap = imageBitmap,
+                                contentDescription = "history image",
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    } else {
+                        Image(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(5.dp)),
+                            painter = rememberImagePainter(data = it),
+                            contentDescription = "history image",
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 5.dp),
+                        text = it,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+    }
+    Row {
+        Button(
+            modifier = Modifier.padding(end = 10.dp),
+            onClick = {
+                imageFile = null
+                onSelectFileClick()
+            }
+        ) {
+            Text(text = "选择本地图片")
+        }
+        Button(onClick = onLoadImageClick) {
+            Text(text = "加载图片")
+        }
+    }
+
     if (imageFile != null) {
+        val handler = imageHandlers.find {
+            it.handle(imageUrl)
+        }
+        val bitmap = handler?.getBitmap()?.asImageBitmap()
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                bitmap = imageUrlToBitmap(imageUrl)!!.asImageBitmap(),
-                contentDescription = "",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(160.dp)
-                    .alpha(alphaFuc(alpha))
-                    .clip(RoundedCornerShape(cornerFuc(con)))
-            )
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = "",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(160.dp)
+                        .alpha(alphaFuc(alpha))
+                        .clip(RoundedCornerShape(cornerFuc(con)))
+                )
+            }
             Column {
                 Text(text = "${getString(R.string.corner)}:${cornerFuc(con)}")
                 SliderView(
@@ -400,27 +584,114 @@ fun PreviewWidgetView(
     }
 }
 
-@Composable
-fun SliderView(
-    value: Float,
-    onValueChange: (Float) -> Unit,
-    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
-    start: String,
-    end: String
-) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = start,
-        )
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = valueRange,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = end,
-        )
+val imageHandlers = arrayOf(FileImageHandler, UrlImageHandler, CacheImageHandler)
+
+interface ImageHandler {
+
+    fun handle(imageUrl: String): Boolean
+
+    fun getImageFile(): File?
+
+    suspend fun loadImage(): File?
+
+    fun getBitmap(): Bitmap?
+
+}
+
+object FileImageHandler : ImageHandler {
+
+    lateinit var imageUrl: String
+
+
+    override fun handle(imageUrl: String): Boolean {
+        this.imageUrl = imageUrl
+        return imageUrl.startsWith("content://") || imageUrl.startsWith("file://")
     }
 
+    override fun getImageFile(): File {
+        return uriToFile(imageUrl)
+
+    }
+
+    override suspend fun loadImage(): File {
+        val imageFile = getImageFile()
+        if (imageFile.length() > 0L) {
+            return imageFile
+        }
+        application.contentResolver.openInputStream(Uri.parse(imageUrl)).use { input ->
+            input?.let {
+                FileOutputStream(imageFile).use {
+                    it.write(input.readBytes())
+                }
+            }
+        }
+        return imageFile
+    }
+
+    override fun getBitmap(): Bitmap? {
+        return Uri.parse(imageUrl).toImage()
+    }
+}
+
+object UrlImageHandler : ImageHandler {
+
+    lateinit var imageUrl: String
+
+    override fun handle(imageUrl: String): Boolean {
+        this.imageUrl = imageUrl
+        return imageUrl.startsWith("http") || imageUrl.startsWith("https")
+    }
+
+
+    override fun getImageFile(): File? {
+        val urlToFile = imageUrlToFile(imageUrl)
+        if (urlToFile != null && urlToFile.exists()) {
+            urlToFile.createNewFile()
+        }
+        return urlToFile
+    }
+
+    override suspend fun loadImage(): File? {
+        val imageFile = getImageFile()
+        if (imageFile != null && imageFile.length() == 0L) {
+            Request.download(imageUrl, imageFile)
+        }
+        return imageFile
+    }
+
+    override fun getBitmap(): Bitmap? {
+        return fileToBitmap(getImageFile())
+    }
+
+
+}
+
+
+object CacheImageHandler : ImageHandler {
+
+    lateinit var imageUrl: String
+
+    lateinit var file: File
+
+    override fun handle(imageUrl: String): Boolean {
+        this.imageUrl = imageUrl
+        file = File(imageUrl)
+        return imageUrl.startsWith("/data/")
+    }
+
+    override fun getImageFile(): File {
+        return file
+
+    }
+
+    override suspend fun loadImage(): File {
+        return file
+    }
+
+    override fun getBitmap(): Bitmap? {
+        val uri =
+            FileProvider.getUriForFile(application, "org.zky.genshinwidgets.fileprovider", file)
+                ?: return null
+        return uri.toImage()
+    }
 }

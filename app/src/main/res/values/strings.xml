@@ -78,4 +78,6 @@
     <string name="ui_config">设置UI</string>
     <string name="save_bg_error">保存背景图片失败</string>
     <string name="config_bg">配置背景图</string>
+    <string name="seems_you_donot_have_role">你好像还没有人物?</string>
+    <string name="input_error">输入有误</string>
 </resources>

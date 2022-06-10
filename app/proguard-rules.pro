@@ -32,3 +32,4 @@
 
 -keep class org.zky.genshinwidgets.model.**{*;}
 -keep class org.zky.genshinwidgets.network.**{*;}
+-keep class org.zky.genshinwidgets.webview.WebViewBridgeHandler

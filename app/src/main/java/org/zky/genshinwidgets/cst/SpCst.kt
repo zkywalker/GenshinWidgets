@@ -3,6 +3,8 @@ package org.zky.genshinwidgets.cst
 
 object SpCst {
 
+    val KEY_HISTORY_PICK_IMAGES = "key_history_pick_images"
+
     val KEY_IMAGE_BG: String = "key_image_bg"
 
     val KEY_SHOW_UID: String= "key_show_uid"

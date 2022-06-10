@@ -28,6 +28,21 @@ fun imageUrlToFile(url: String): File? {
     return null
 }
 
+fun uriToFile(url: String): File {
+    val dir =
+        File("${application.cacheDir.absolutePath}${File.separator}files${File.separator}img${File.separator}")
+    if (!dir.exists()) {
+        dir.mkdirs()
+    }
+    val file =
+        File(
+            "${application.cacheDir.absolutePath}${File.separator}files${File.separator}img${File.separator}${
+                MD5(url)
+            }.png"
+        )
+    return file
+}
+
 fun imageUrlToBitmap(url: String): Bitmap? {
     val file = imageUrlToFile(url) ?: return null
     val uri = FileProvider.getUriForFile(application, "org.zky.genshinwidgets.fileprovider", file)
@@ -35,7 +50,8 @@ fun imageUrlToBitmap(url: String): Bitmap? {
     return uri.toImage()
 }
 
-fun fileToBitmap(file: File): Bitmap? {
+fun fileToBitmap(file: File?): Bitmap? {
+    file?: return null
     val uri = FileProvider.getUriForFile(application, "org.zky.genshinwidgets.fileprovider", file)
         ?: return null
     return uri.toImage()

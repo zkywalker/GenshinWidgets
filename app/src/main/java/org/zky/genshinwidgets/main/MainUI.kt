@@ -47,19 +47,12 @@ fun UserRoleView(
         }
         return
     }
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "UID:${userRole.game_uid}", modifier = Modifier.padding(end = 10.dp))
-            Button(onClick = { copyUid(userRole.game_uid) }) {
-                Text(text = getString(R.string.copy_uid))
-            }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(text = "UID:${userRole.game_uid}", modifier = Modifier.padding(end = 10.dp))
+        Button(onClick = { copyUid(userRole.game_uid) }) {
+            Text(text = getString(R.string.copy_uid))
         }
-        Text(
-            text = "game:${userRole.game_biz} region:${userRole.region}(${userRole.region_name})",
-            modifier = Modifier.padding(end = 10.dp)
-        )
     }
-
 }
 
 @Composable
