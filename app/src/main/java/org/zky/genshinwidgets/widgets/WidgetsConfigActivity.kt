@@ -418,7 +418,7 @@ class WidgetsConfigActivity : AppCompatActivity() {
             viewModel.pageLoading.value = false
             finish()
             // todo auto refresh seems not work when app died -_-
-//            GlanceReceiver.startRefreshAlarm(application, WidgetsConfig.autoRefreshMs)
+            GlanceReceiver.startRefreshAlarm(application, Config.autoRefreshMs)
         }
     }
 }

@@ -8,6 +8,8 @@ import android.webkit.*
 import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
 import org.zky.genshinwidgets.R
+import org.zky.genshinwidgets.cst.ApiCst.UA_ANDROID
+import org.zky.genshinwidgets.utils.runOnMainThread
 
 
 open class WebViewActivity : AppCompatActivity() {
@@ -18,7 +20,8 @@ open class WebViewActivity : AppCompatActivity() {
 
     val mapOf = mapOf(
         "x-rpc-app_version" to "2.28.1",
-        "user-agent" to "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.28.1",
+        "user-agent" to UA_ANDROID,
+
         "test" to "hello"
     )
 
@@ -117,17 +120,19 @@ open class WebViewActivity : AppCompatActivity() {
             WebView.setWebContentsDebuggingEnabled(true)
             mixedContentMode = WebSettings.LOAD_NORMAL
 
-            userAgentString =
-                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.28.1"
+            userAgentString = UA_ANDROID
+
         }
-        webView.addJavascriptInterface(WebViewBridgeHandler(), "MiHoYoJSInterface")
-        webView.addJavascriptInterface(WebViewBridgeHandler(), "MiHoYoSDKInvoke")
+        webView.addJavascriptInterface(WebViewBridgeHandler(this) {
+            runOnMainThread {
+                webView.evaluateJavascript(it) {
+                    Log.i("kyle", "evaluateJavascript:$it")
+                }
+            }
+        }, "MiHoYoJSInterface")
+//        webView.addJavascriptInterface(WebViewBridgeHandler(this), "MiHoYoSDKInvoke")
         webView.loadUrl(url)
-//        webView.postDelayed({
-//            webView.evaluateJavascript(js) {
-//                Log.i("WebViewActivity", "evaluateJavascript: $it")
-//            }
-//        }, 2000)
+
     }
 
     open fun onLoadUrl(intent: Intent?): String? = intent?.getStringExtra("url")
@@ -147,6 +152,5 @@ open class WebViewActivity : AppCompatActivity() {
         return false
     }
 
-
-
 }
+

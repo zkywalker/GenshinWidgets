@@ -1,9 +1,12 @@
 package org.zky.genshinwidgets.main
 
+import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
 import android.content.ClipData
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
@@ -12,6 +15,7 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -35,15 +39,16 @@ import androidx.lifecycle.get
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.ApiCst
-import org.zky.genshinwidgets.webview.WebLoginActivity
 import org.zky.genshinwidgets.res.color
 import org.zky.genshinwidgets.ui.DefaultCard
 import org.zky.genshinwidgets.ui.SettingItemView
 import org.zky.genshinwidgets.ui.SpannerView
 import org.zky.genshinwidgets.utils.*
 import org.zky.genshinwidgets.webview.CookieInputDialog
+import org.zky.genshinwidgets.webview.WebLoginActivity
 import org.zky.genshinwidgets.widgets.Config
 import org.zky.genshinwidgets.widgets.WidgetsConfigActivity
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -212,7 +217,8 @@ class MainActivity : AppCompatActivity() {
                         onClickTodayMaterial = {
                             startWebViwActivity(
                                 getString(R.string.today_material),
-                                ApiCst.WEB_URL_TODAY_MATERIAL
+//                                ApiCst.WEB_URL_TODAY_MATERIAL
+                            "https://webstatic.mihoyo.com/app/community-game-records/index.html?bbs_presentation_style=fullscreen#/ys/role/all?role_id=165255180&server=cn_gf01&access=1"
                             )
                         },
                         onClickMap = {

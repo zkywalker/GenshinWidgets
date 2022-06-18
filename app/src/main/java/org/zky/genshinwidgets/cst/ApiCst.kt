@@ -43,4 +43,7 @@ object ApiCst {
 
     const val APP_PACKAGE_NAME_GENSHIN_CLOUD = "com.miHoYo.cloudgames.ys"
 
+    const val UA_ANDROID = "Mozilla/5.0 (Linux; U; Android 9; zh-cn; Redmi Note 5 Build/PKQ1.180904.001) AppleWebKit/537.36 (KHTML, like Gecko)  miHoYoBBS/2.28.1"
+
+    const val UA_IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.28.1"
 }
