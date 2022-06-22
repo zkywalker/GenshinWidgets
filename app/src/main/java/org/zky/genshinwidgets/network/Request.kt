@@ -78,6 +78,17 @@ object Request {
                 .handleResponse()
         }
 
+    // getCharacter
+    suspend fun getCharacter(
+        role_id: String,
+        server: String,
+        cookie: String? = null
+    ): GetCharacter? {
+        val body = getCharacterRequest(role_id = role_id, server = server)
+            .toJson().toRequestBody("application/json".toMediaTypeOrNull())
+        return requestTry { recordApi.getCharacter(body, cookie = cookie).handleResponse() }
+    }
+
 
     suspend fun <T> requestTry(block: suspend () -> T): T? = try {
         block()

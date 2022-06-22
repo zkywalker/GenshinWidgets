@@ -20,4 +20,15 @@ object HeaderHelper {
         val check = MD5("salt=${ApiCst.BBS_SALT_WEB_OLD}&t=$ts&r=$random")
         return "$ts,$random,$check"
     }
+
+    fun getDs2(query: String? = null, body: String? = null): String {
+        val ts = getTs()
+        val random = getRandomCode()
+        val check =
+            MD5("salt=${ApiCst.SALT}&t=$ts&r=$random&b=${body ?: ""}&q=${query ?: ""}")
+        return "$ts,$random,$check"
+    }
+
+
+
 }

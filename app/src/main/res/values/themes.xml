@@ -14,7 +14,7 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="Theme.GenshinWidgets2" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+    <style name="Theme.GenshinWidgets2" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">#FF30A4FC</item>
         <item name="colorPrimaryVariant">#FF30A4FC</item>

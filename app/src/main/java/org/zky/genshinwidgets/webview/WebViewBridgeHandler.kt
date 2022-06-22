@@ -1,15 +1,18 @@
 package org.zky.genshinwidgets.webview
 
 import android.app.Activity
+import android.text.TextUtils
 import android.util.Log
 import android.webkit.JavascriptInterface
+import com.google.gson.internal.LinkedTreeMap
 import org.zky.genshinwidgets.model.JSJsonParamsBean
 import org.zky.genshinwidgets.network.HeaderHelper
 import org.zky.genshinwidgets.utils.fromJsonOrNull
 import org.zky.genshinwidgets.utils.loginCookie
 import org.zky.genshinwidgets.utils.toJson
+import org.zky.genshinwidgets.utils.toJsonOrNull
 
-open class WebViewBridgeHandler(val activity: Activity, val excJs: (String) -> Unit) {
+open class WebViewBridgeHandler(val activity: Activity, val excJs: (String) -> Unit = {}) {
 
     @JavascriptInterface
     fun closePage() {
@@ -21,9 +24,22 @@ open class WebViewBridgeHandler(val activity: Activity, val excJs: (String) -> U
     fun postMessage(paramString: String) {
         Log.i("WebViewActivity", "handler: $paramString")
         val jsJsonParamsBean =
-            paramString.fromJsonOrNull<JSJsonParamsBean<HashMap<Any, Any>>>() ?: return
+            paramString.fromJsonOrNull<JSJsonParamsBean<LinkedTreeMap<Any, Any?>>>() ?: return
+        if (jsJsonParamsBean.method == JsMethod.closePage) {
+            activity.finish()
+            return
+        }
         val data = when (jsJsonParamsBean.method) {
-            JsMethod.getDS -> hashMapOf("DS" to HeaderHelper.getDs())
+            JsMethod.getDS -> hashMapOf("DS" to HeaderHelper.getDs2())
+            JsMethod.getDS2 -> {
+//                val map: LinkedTreeMap<Any,Any> = jsJsonParamsBean.payload
+                var query = jsJsonParamsBean.payload["query"].toJsonOrNull()
+                val body = jsJsonParamsBean.payload["body"].toString()
+                if (TextUtils.isEmpty(query) || query == "{}") {
+                    query = null
+                }
+                hashMapOf("DS" to HeaderHelper.getDs2(query, body))
+            }
             JsMethod.getHTTPRequestHeaders -> hashMapOf(
                 "x-rpc-device_name" to "Xiaomi M2006J10C",
                 "Referer" to "https://app.mihoyo.com",
@@ -34,8 +50,13 @@ open class WebViewBridgeHandler(val activity: Activity, val excJs: (String) -> U
                 "x-rpc-device_model" to "M2006J10C",
                 "x-rpc-sys_version" to "11"
             )
-            JsMethod.getStatusBarHeight -> hashMapOf("statusBarHeight" to "34.909092")
-            JsMethod.getCookieInfo -> hashMapOf("cookie" to loginCookie,"Cookie" to loginCookie,"CookieInfo" to loginCookie,"cookieInfo" to loginCookie,)
+            JsMethod.getStatusBarHeight -> hashMapOf(/*"statusBarHeight" to "34.909092"*/)
+            JsMethod.getCookieInfo -> hashMapOf(
+                "cookie" to loginCookie,
+                "Cookie" to loginCookie,
+                "CookieInfo" to loginCookie,
+                "cookieInfo" to loginCookie,
+            )
             else -> hashMapOf()
         }
         exc(jsJsonParamsBean.getCallback(), JsCallback(data = data).toJson())
@@ -58,6 +79,8 @@ object JsMethod {
     val getHTTPRequestHeaders = "getHTTPRequestHeaders"
     val getCookieInfo = "getCookieInfo"
     val getDS = "getDS"
+    val getDS2 = "getDS2"
+    val closePage = "closePage"
 }
 
 //{

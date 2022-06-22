@@ -3,6 +3,8 @@ plugins {
     id 'org.jetbrains.kotlin.android'
     id 'com.google.gms.google-services'
     id 'com.google.firebase.crashlytics'
+    id 'com.squareup.sqldelight'
+
 }
 
 android {
@@ -55,7 +57,11 @@ android {
 
 }
 
-
+//sqldelight {
+//    database("genshin_widget.db") {
+//        packageName = "org.zky.genshinwidgets"
+//    }
+//}
 
 
 dependencies {
@@ -112,6 +118,9 @@ dependencies {
     // When using the BoM, you don't specify versions in Firebase library dependencies
     implementation 'com.google.firebase:firebase-crashlytics-ktx'
     implementation 'com.google.firebase:firebase-analytics-ktx'
+
+    // sqldelight
+    implementation("com.squareup.sqldelight:android-driver:1.5.0")
 
 //    implementation 'com.github.lzyzsd:jsbridge:1.0.4'
 

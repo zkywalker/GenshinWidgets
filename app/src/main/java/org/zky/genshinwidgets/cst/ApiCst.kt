@@ -18,6 +18,8 @@ object ApiCst {
 
     const val REQUEST_PATH_SIGN_REWARD = "/event/bbs_sign_reward/home"
 
+    const val REQUEST_PATH_GET_CHARACTER = "/game_record/app/genshin/api/character"
+
     const val WEB_URL_TODAY_MATERIAL =
         "https://bbs.mihoyo.com/ys/obc/channel/map/193?bbs_presentation_style=no_header&visit_device=mobile"
 

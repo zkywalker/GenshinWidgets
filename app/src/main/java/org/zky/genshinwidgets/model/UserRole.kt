@@ -8,5 +8,6 @@ data class UserRole(
     val level: String,
     val is_chosen: Boolean,
     val region_name: String,
-    val is_official: Boolean
+    val is_official: Boolean,
+    var account_id: String = "",
 )

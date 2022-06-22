@@ -39,4 +39,10 @@ interface GenshinApiService {
         @Header("Cookie") cookie: String? = null
     ): Response<HashMap<String, Any>>
 
+    //https://api-takumi-record.mihoyo.com/game_record/app/genshin/api/character
+    @POST(ApiCst.REQUEST_PATH_GET_CHARACTER)
+    suspend fun getCharacter(
+        @Body body: RequestBody,
+        @Header("Cookie") cookie: String? = null
+    ): Response<GetCharacter>
 }

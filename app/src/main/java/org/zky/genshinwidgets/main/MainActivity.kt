@@ -1,12 +1,8 @@
 package org.zky.genshinwidgets.main
 
-import android.app.PendingIntent
-import android.appwidget.AppWidgetManager
 import android.content.ClipData
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
@@ -37,8 +33,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.get
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberImagePainter
+import com.google.accompanist.flowlayout.FlowRow
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.ApiCst
+import org.zky.genshinwidgets.model.Element
+import org.zky.genshinwidgets.model.GameCharacter
 import org.zky.genshinwidgets.res.color
 import org.zky.genshinwidgets.ui.DefaultCard
 import org.zky.genshinwidgets.ui.SettingItemView
@@ -102,6 +102,7 @@ class MainActivity : AppCompatActivity() {
         val showCookieInputDialog = remember { mutableStateOf(false) }
         val showSpannerDialog = remember { mutableStateOf(false) }
         val pageRequesting = model.pageRequesting.observeAsState()
+        val characters = model.characters.observeAsState()
 
         Scaffold(
             scaffoldState = scaffoldState,
@@ -120,6 +121,7 @@ class MainActivity : AppCompatActivity() {
                     .padding(15.dp)
                     .verticalScroll(rememberScrollState())
             ) {
+                CharacterListView(characters.value)
                 val userRoleList = userRoles.value
                 when {
                     pageRequesting.value == true -> {
@@ -218,7 +220,7 @@ class MainActivity : AppCompatActivity() {
                             startWebViwActivity(
                                 getString(R.string.today_material),
 //                                ApiCst.WEB_URL_TODAY_MATERIAL
-                            "https://webstatic.mihoyo.com/app/community-game-records/index.html?bbs_presentation_style=fullscreen#/ys/role/all?role_id=165255180&server=cn_gf01&access=1"
+                                "https://webstatic.mihoyo.com/app/community-game-records/index.html?bbs_presentation_style=fullscreen#/ys/role/all?role_id=165255180&server=cn_gf01&access=1"
                             )
                         },
                         onClickMap = {
@@ -256,6 +258,76 @@ class MainActivity : AppCompatActivity() {
                     onSubmit = {
                         checkCookie(it)
                     })
+            }
+        }
+    }
+
+    @Composable
+    fun CharacterListView(value: List<GameCharacter>?) {
+        value ?: return
+        FlowRow(mainAxisSpacing = 4.dp, crossAxisSpacing = 4.dp) {
+            value.forEach {
+                Box(Modifier.size(56.dp, 68.dp)) {
+                    var ic_star = R.drawable.icon_character_5_star
+                    var bg_star = R.drawable.bg_character_5_star
+                    when (it.rarity) {
+                        4 -> {
+                            ic_star = R.drawable.icon_character_4_star
+                            bg_star = R.drawable.bg_character_4_star
+                        }
+                        5 -> {
+                            ic_star = R.drawable.icon_character_5_star
+                            bg_star = R.drawable.bg_character_5_star
+                        }
+                        else -> {
+                            bg_star = R.drawable.bg_character_105_star
+                        }
+                    }
+                    Image(
+                        modifier = Modifier.fillMaxSize(),
+                        painter = painterResource(id = bg_star),
+                        contentDescription = "bg"
+                    )
+
+                    Box(contentAlignment = Alignment.BottomEnd) {
+                        Image(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            painter = rememberImagePainter(data = it.icon),
+                            contentDescription = it.name
+                        )
+                        Image(
+                            painter = painterResource(id = R.drawable.icon_character_lb),
+                            contentDescription = null
+                        )
+                    }
+                    val element = Element.getElementByName(it.element)
+                    if (element != null) {
+                        Image(
+                            modifier = Modifier
+                                .size(16.dp, 16.dp)
+                                .padding(1.dp),
+                            painter = painterResource(id = element.icon),
+                            contentDescription = element.name
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Spacer(Modifier.weight(1f))
+                        Image(
+                            modifier = Modifier
+                                .height(11.dp),
+                            painter = painterResource(id = ic_star), contentDescription = "ic"
+                        )
+                        Text(
+                            modifier = Modifier.offset(y = (-1).dp),
+                            text = "Lv.${it.level}",
+                            fontSize = 8.sp
+                        )
+                    }
+                }
             }
         }
     }
