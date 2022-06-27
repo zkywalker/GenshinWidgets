@@ -21,6 +21,9 @@ object SpCst {
 
     const val KEY_ROLE_INFO: String = "key_role_info"
 
+    // main account
+    const val KEY_SELECT_ACCOUNT: String = "key_select_account"
+
     const val DEFAULT_SP_NAME: String = "default_sp_name"
 
 }

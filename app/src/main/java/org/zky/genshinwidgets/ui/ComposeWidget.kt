@@ -1,5 +1,8 @@
 package org.zky.genshinwidgets.ui
 
+import android.util.Log
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -8,12 +11,15 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import org.zky.genshinwidgets.R
+import org.zky.genshinwidgets.model.Element
 import org.zky.genshinwidgets.utils.toast
 
 
@@ -49,17 +55,18 @@ fun SettingItemView(text: String, imageRes: Int, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .padding(10.dp)
+            .fillMaxWidth()
             .clickable(onClick = onClick)
+            .padding(10.dp)
     ) {
         Icon(
             painter = painterResource(id = imageRes),
             contentDescription = text,
             modifier = Modifier
-                .size(24.dp)
                 .padding(end = 10.dp)
+                .size(24.dp)
         )
-        Text(text = text, fontWeight = FontWeight.Bold)
+        Text(text = text, fontSize = 19.sp)
     }
 }
 
@@ -126,10 +133,40 @@ fun <T> SpannerView(
     }
 }
 
+
 @Composable
-fun LoadingView(modifier: Modifier = Modifier, onDismissRequest: () -> Unit) {
+fun LoadingView(modifier: Modifier = Modifier, onDismissRequest: () -> Unit = {}) {
     Dialog(onDismissRequest = onDismissRequest) {
-        CircularProgressIndicator()
+        val infiniteTransition = rememberInfiniteTransition()
+        val alpha by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 0f,
+            animationSpec = infiniteRepeatable(
+                animation = keyframes {
+                    durationMillis = 1000
+                    1f at 500
+                },
+                repeatMode = RepeatMode.Reverse
+            )
+        )
+        val index by infiniteTransition.animateValue(
+            initialValue = 0,
+            targetValue = Element.all.size,
+            typeConverter = Int.VectorConverter,
+            animationSpec = infiniteRepeatable(
+                animation = keyframes {
+                    durationMillis = Element.all.size * 1000
+                }
+            )
+        )
+        Log.i("amin", "$index")
+        val image = index % Element.all.size
+
+        Image(
+            modifier = Modifier.size(50.dp).alpha(alpha),
+            painter = painterResource(id = Element.all[image].icon),
+            contentDescription = ""
+        )
     }
 }
 
@@ -144,10 +181,10 @@ fun Test() {
             onVisibilityChange = { expanded = it },
             data = listOf,
             defaultIndex = 1,
-            itemContentGetter = { i, it ->
+            itemContentGetter = { _, it ->
                 Text(text = it ?: "null")
             },
-            onItemClick = { i, it -> it.toast() }
+            onItemClick = { _, it -> it.toast() }
         )
     }
 }

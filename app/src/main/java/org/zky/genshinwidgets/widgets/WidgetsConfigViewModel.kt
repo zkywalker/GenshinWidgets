@@ -5,10 +5,10 @@ import android.text.TextUtils
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import org.zky.genshinwidgets.cst.ApiCst
 import org.zky.genshinwidgets.cst.SpCst
+import org.zky.genshinwidgets.database.DatabaseStore
 import org.zky.genshinwidgets.model.UserRole
-import org.zky.genshinwidgets.network.Request
+import org.zky.genshinwidgets.model.convertToUserRoles
 import org.zky.genshinwidgets.utils.*
 import java.io.File
 
@@ -36,8 +36,6 @@ class WidgetsConfigViewModel : ViewModel() {
 
     val appWidgetId = MutableLiveData(AppWidgetManager.INVALID_APPWIDGET_ID)
 
-    val widgetCookie = MutableLiveData(loginCookie)
-
     val cookieDelegate = PreferenceDelegate(SpCst.KEY_COOKIE, "")
 
     var widgetCookieSp by cookieDelegate
@@ -48,13 +46,11 @@ class WidgetsConfigViewModel : ViewModel() {
 
     val pageRequesting = MutableLiveData<Boolean>()
 
-    val pageLoading =  MutableLiveData<Boolean>()
+    val pageLoading = MutableLiveData<Boolean>()
 
-    suspend fun requestUserRole(cookie: String? = null): UserRole? {
+    fun getUserRole(): UserRole? {
         pageRequesting.value = true
-        roleInfo.value = Request.getUserRole(cookie)?.list?.filter {
-            it.game_biz == ApiCst.GAME_BIZ_GENSHIN
-        }
+        roleInfo.value = DatabaseStore.queries.selectAllRoles().executeAsList().convertToUserRoles()
         val roles = roleInfo.value ?: return null
         if (roles.isEmpty()) {
             return null
@@ -65,14 +61,17 @@ class WidgetsConfigViewModel : ViewModel() {
     }
 
     fun refreshLocalWidgetCookie() {
-        if (TextUtils.isEmpty(widgetCookie.value)) {
+        val role = currentUseRole.value ?: return
+        val account =
+            DatabaseStore.queries.selectAccount(role.account_id).executeAsOneOrNull() ?: return
+        if (TextUtils.isEmpty(account.cookie)) {
             return
         }
         if (appWidgetId.value == null || appWidgetId.value == AppWidgetManager.INVALID_APPWIDGET_ID) {
             return
         }
         cookieDelegate.name = "${SpCst.KEY_COOKIE}_${appWidgetId.value}"
-        widgetCookieSp = widgetCookie.value ?: ""
+        widgetCookieSp = account.cookie
     }
 
 

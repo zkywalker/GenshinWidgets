@@ -8,7 +8,6 @@ import com.google.gson.internal.LinkedTreeMap
 import org.zky.genshinwidgets.model.JSJsonParamsBean
 import org.zky.genshinwidgets.network.HeaderHelper
 import org.zky.genshinwidgets.utils.fromJsonOrNull
-import org.zky.genshinwidgets.utils.loginCookie
 import org.zky.genshinwidgets.utils.toJson
 import org.zky.genshinwidgets.utils.toJsonOrNull
 
@@ -51,11 +50,12 @@ open class WebViewBridgeHandler(val activity: Activity, val excJs: (String) -> U
                 "x-rpc-sys_version" to "11"
             )
             JsMethod.getStatusBarHeight -> hashMapOf(/*"statusBarHeight" to "34.909092"*/)
+            // it seems not work - -
             JsMethod.getCookieInfo -> hashMapOf(
-                "cookie" to loginCookie,
-                "Cookie" to loginCookie,
-                "CookieInfo" to loginCookie,
-                "cookieInfo" to loginCookie,
+//                "cookie" to loginCookie,
+//                "Cookie" to loginCookie,
+//                "CookieInfo" to loginCookie,
+//                "cookieInfo" to loginCookie,
             )
             else -> hashMapOf()
         }

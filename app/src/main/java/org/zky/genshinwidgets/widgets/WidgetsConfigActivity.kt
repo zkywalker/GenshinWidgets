@@ -49,6 +49,7 @@ import kotlinx.coroutines.withContext
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.ApiCst
 import org.zky.genshinwidgets.cst.SpCst
+import org.zky.genshinwidgets.main.MainActivity
 import org.zky.genshinwidgets.model.WidgetsConfigModel
 import org.zky.genshinwidgets.network.Request
 import org.zky.genshinwidgets.res.color
@@ -58,32 +59,21 @@ import org.zky.genshinwidgets.webview.WebLoginActivity
 import java.io.File
 import org.zky.genshinwidgets.utils.BitmapFillet.CORNER_ALL
 import org.zky.genshinwidgets.utils.getString
-import org.zky.genshinwidgets.utils.loginCookie
 import org.zky.genshinwidgets.utils.toast
-import org.zky.genshinwidgets.webview.CookieInputDialog
 import java.io.FileOutputStream
 
 class WidgetsConfigActivity : AppCompatActivity() {
 
     private lateinit var viewModel: WidgetsConfigViewModel
 
-    private val showInputDialog = mutableStateOf(false)
-
     private lateinit var launcher: ActivityResultLauncher<Intent>
 
     private val activityResultCallback: ActivityResultCallback<ActivityResult> =
         ActivityResultCallback {
             val fileUri = it.data?.data
-            // unstable code
             if (fileUri != null) {
                 viewModel.localPickImageFile.value = fileUri.toString()
                 return@ActivityResultCallback
-            }
-            Log.i("kyle", "got cookie:${it.data?.getStringExtra("cookie")}")
-            val cookie = it.data?.getStringExtra("cookie") ?: return@ActivityResultCallback
-            checkCookie(cookie)
-            lifecycleScope.launch {
-                viewModel.requestUserRole(cookie)
             }
         }
 
@@ -105,7 +95,7 @@ class WidgetsConfigActivity : AppCompatActivity() {
             viewModel.isAddWidgetMode = false
         }
         lifecycleScope.launch {
-            viewModel.requestUserRole(loginCookie)
+            viewModel.getUserRole()
         }
         setContent {
 
@@ -113,21 +103,9 @@ class WidgetsConfigActivity : AppCompatActivity() {
                 RootView(
                     onConfirmClick = onConfirmClick,
                     onJumpToLoginClick = onLoginClick,
-                    onInputCookieClick = onInputCookieClick,
                     onValueChange = onImageValueChange,
                 ) {
                     finish()
-                }
-                if (showInputDialog.value) {
-                    CookieInputDialog(
-                        onDismissRequest = { showInputDialog.value = false },
-                        onSubmit = { cookie ->
-                            checkCookie(cookie)
-                            lifecycleScope.launch {
-                                viewModel.requestUserRole(cookie)
-                            }
-                        }
-                    )
                 }
             }
         }
@@ -137,12 +115,10 @@ class WidgetsConfigActivity : AppCompatActivity() {
     private fun RootView(
         onConfirmClick: (WidgetsConfigModel) -> Unit,
         onJumpToLoginClick: () -> Unit,
-        onInputCookieClick: () -> Unit,
         onValueChange: (File?, Dp?, Float?) -> Unit,
         onBackClick: () -> Unit,
     ) {
         val appWidgetId = viewModel.appWidgetId.observeAsState()
-        val cookie = viewModel.widgetCookie.observeAsState()
         val userRoles = viewModel.roleInfo.observeAsState()
         val userRole = viewModel.currentUseRole.observeAsState()
         val pageRequesting = viewModel.pageRequesting.observeAsState()
@@ -176,7 +152,7 @@ class WidgetsConfigActivity : AppCompatActivity() {
                     .fillMaxSize()
                     .padding(15.dp)
             ) {
-                if (TextUtils.isEmpty(cookie.value)) {
+                if (userRole.value == null) {
                     Button(onJumpToLoginClick) {
                         Text(org.zky.genshinwidgets.utils.getString(R.string.login_plz))
                     }
@@ -195,15 +171,6 @@ class WidgetsConfigActivity : AppCompatActivity() {
                                     CircularProgressIndicator()
                                 }
                             }
-                            TextUtils.isEmpty(cookie.value) -> {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(100.dp), contentAlignment = Alignment.Center
-                                ) {
-                                    Text(text = getString(R.string.login_plz))
-                                }
-                            }
                             userRoleList?.isNotEmpty() != true -> {
                                 Box(
                                     modifier = Modifier
@@ -220,30 +187,16 @@ class WidgetsConfigActivity : AppCompatActivity() {
                                     onVisibilityChange = { s -> showSpannerDialog.value = s },
                                     data = userRoleList,
                                     defaultIndex = userRoleList.indexOf(userRole.value),
-                                    itemContentGetter = { i, it ->
+                                    itemContentGetter = { _, it ->
                                         Text(
                                             text = "${it?.nickname ?: ""}\n${it?.region_name} Lv.${it?.level ?: "?"} UID:${it?.game_uid ?: "?"}",
                                             fontSize = 17.sp
                                         )
                                     },
-                                    onItemClick = { i, it ->
+                                    onItemClick = { _, it ->
                                         viewModel.currentUseRole.value = it
                                     }
                                 )
-                            }
-                        }
-                        DefaultCard(Modifier.padding(bottom = 10.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    org.zky.genshinwidgets.utils.getString(R.string.use_other_account),
-                                    modifier = Modifier.padding(10.dp)
-                                )
-                                Button(onJumpToLoginClick, modifier = Modifier.padding(10.dp)) {
-                                    Text(org.zky.genshinwidgets.utils.getString(R.string.login))
-                                }
-                                Button(onInputCookieClick, modifier = Modifier.padding(10.dp)) {
-                                    Text(org.zky.genshinwidgets.utils.getString(R.string.by_input_cookie))
-                                }
                             }
                         }
                     }
@@ -326,17 +279,6 @@ class WidgetsConfigActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkCookie(cookie: String) {
-        if (checkToken(cookie)) {
-            viewModel.widgetCookie.value = cookie
-            if (TextUtils.isEmpty(loginCookie)) {
-                loginCookie = cookie
-            }
-        } else {
-            getString(R.string.get_cookie_fail).toast()
-        }
-    }
-
     private val onImageValueChange: (File?, Dp?, Float?) -> Unit = { f, c, a ->
         viewModel.widgetImageFile.value = f
         viewModel.widgetImageCorner.value = c
@@ -344,9 +286,11 @@ class WidgetsConfigActivity : AppCompatActivity() {
 
     }
 
-    private val onInputCookieClick = { showInputDialog.value = true }
-
-    private val onLoginClick: () -> Unit = { startActivityForResult<WebLoginActivity>(launcher) }
+    private val onLoginClick: () -> Unit = {
+//        startActivityForResult<WebLoginActivity>(launcher)
+        startActivity<MainActivity>()
+        finish()
+    }
 
     private val onConfirmClick: (WidgetsConfigModel) -> Unit = {
         lifecycleScope.launch {

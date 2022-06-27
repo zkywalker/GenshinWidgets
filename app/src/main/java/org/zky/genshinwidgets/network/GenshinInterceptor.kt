@@ -9,8 +9,9 @@ import okhttp3.Response
 import okio.Buffer
 import org.zky.genshinwidgets.cst.ApiCst
 import org.zky.genshinwidgets.utils.MD5
-import org.zky.genshinwidgets.utils.loginCookie
+import org.zky.genshinwidgets.utils.fromJsonOrNull
 import java.util.*
+import kotlin.collections.HashMap
 
 class GenshinInterceptor : Interceptor {
 
@@ -24,14 +25,12 @@ class GenshinInterceptor : Interceptor {
         val random = "${((Math.random() + 1) * 100000).toInt()}"
         val buffer = Buffer()
         request.body?.writeTo(buffer)
-        val body = buffer.readUtf8()
-        Log.i("kyle", "method:${request.method},body:$body")
+        val bodyRaw = buffer.readUtf8()
+        Log.i("kyle", "method:${request.method},body:$bodyRaw")
         val stringBuilder = StringBuilder()
         stringBuilder.append("salt=${ApiCst.SALT}&t=$ts&r=$random")
-        if (request.method == "POST" && !TextUtils.isEmpty(body)) {
-            val body = Gson().toJson(Test("165255180", "cn_gf01"))
-
-            stringBuilder.append("&b=${body}&q=")
+        if (request.method == "POST" && !TextUtils.isEmpty(bodyRaw)) {
+            stringBuilder.append("&b=${bodyRaw}&q=")
         } else if (request.url.query != null) {
             stringBuilder.append("&b=&q=${request.url.query}")
         }
@@ -47,11 +46,11 @@ class GenshinInterceptor : Interceptor {
             .addHeader("x-rpc-app_version", "2.21.1")
             .addHeader("x-rpc-client_type", "5")
             .addHeader("X-Requested-With", "com.mihoyo.hyperion")
-        if (request.header("Cookie") == null) {
-            builder.addHeader("Cookie", loginCookie)
-        } else {
-            Log.d("kyle", "already has Cookie: ${request.header("Cookie")}")
-        }
+//        if (request.header("Cookie") == null) {
+//            builder.addHeader("Cookie", loginCookie)
+//        } else {
+//            Log.d("kyle", "already has Cookie: ${request.header("Cookie")}")
+//        }
         return chain.proceed(builder.build())
     }
 

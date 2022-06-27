@@ -38,6 +38,10 @@ var signDate: String by PreferenceDelegate(SpCst.KEY_SIGN_DATE, "")
 
 val format = SimpleDateFormat("yyyy-MM-dd", Locale.CHINA)
 
+fun Date?.isSameDate(): Boolean {
+    return this != null && format.format(this) == Date().format()
+}
+
 @Composable
 fun WidgetMain(model: DailyNote?, role: UserRole? = null, image: String?) {
 

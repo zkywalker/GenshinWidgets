@@ -15,7 +15,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.zky.genshinwidgets.utils.application
-import org.zky.genshinwidgets.utils.loginCookie
 
 
 class GlanceReceiver : GlanceAppWidgetReceiver() {

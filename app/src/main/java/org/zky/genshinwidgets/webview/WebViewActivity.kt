@@ -104,12 +104,10 @@ open class WebViewActivity : AppCompatActivity() {
             }
             webView.settings.apply {
                 javaScriptEnabled = true
-                layoutAlgorithm = WebSettings.LayoutAlgorithm.NARROW_COLUMNS
                 useWideViewPort = true
                 databaseEnabled = true
                 domStorageEnabled = true
                 cacheMode = WebSettings.LOAD_NO_CACHE
-                setAppCachePath(cacheDir.absolutePath)
                 displayZoomControls = true
                 useWideViewPort = true
                 loadWithOverviewMode = true
@@ -121,7 +119,6 @@ open class WebViewActivity : AppCompatActivity() {
                 supportMultipleWindows()
                 setNeedInitialFocus(true)
                 WebView.setWebContentsDebuggingEnabled(true)
-                mixedContentMode = WebSettings.LOAD_NORMAL
 
                 userAgentString = UA_ANDROID
 

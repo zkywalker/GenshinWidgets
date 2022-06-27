@@ -77,6 +77,7 @@ dependencies {
     implementation "androidx.activity:activity:1.4.0"
     implementation "androidx.activity:activity-ktx:1.4.0"
 
+    implementation("androidx.navigation:navigation-compose:2.4.2")
     // Integration with activities
     implementation 'androidx.activity:activity-compose:1.4.0'
     // Compose Material Design

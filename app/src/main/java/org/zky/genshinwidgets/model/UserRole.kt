@@ -10,4 +10,5 @@ data class UserRole(
     val region_name: String,
     val is_official: Boolean,
     var account_id: String = "",
+    var sign_date: Long = 0
 )

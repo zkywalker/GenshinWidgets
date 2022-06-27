@@ -27,9 +27,9 @@ val handlerThread = HandlerThread("handlerThread").apply {
 
 val workerHandler = Handler(handlerThread.looper)
 
-
 var spCookie: String by PreferenceDelegate(SpCst.KEY_COOKIE, "")
 
+@Deprecated("use database now")
 var loginCookie: String
     get() = if (checkToken(spCookie)) spCookie else ""
     set(value) {
@@ -57,14 +57,6 @@ fun Int.toast() {
 }
 
 fun getString(stringRes: Int): String = application.getString(stringRes)
-
-fun dp2px(dp: Int): Int {
-    val wm = application.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    val display = wm.defaultDisplay
-    val displaymetrics = DisplayMetrics()
-    display.getMetrics(displaymetrics)
-    return (dp * displaymetrics.density + 0.5f).toInt()
-}
 
 fun safeRun(runnable: () -> Unit) {
     try {

@@ -1,14 +1,20 @@
 package org.zky.genshinwidgets.network
 
 import org.zky.genshinwidgets.cst.ApiCst
+import org.zky.genshinwidgets.database.DatabaseStore
 import org.zky.genshinwidgets.utils.MD5
-import org.zky.genshinwidgets.utils.loginCookie
 import java.util.*
 
 object HeaderHelper {
 
-    val deviceId = UUID.nameUUIDFromBytes(loginCookie.toByteArray()).toString().replace("-", "")
-        .uppercase()
+    val deviceId by lazy {
+        UUID.nameUUIDFromBytes(getACookie().toByteArray()).toString().replace("-", "")
+            .uppercase()
+    }
+
+    private fun getACookie(): String {
+        return DatabaseStore.queries.selectAllAccounts().executeAsList().first().cookie
+    }
 
     fun getRandomCode(): String = "${((Math.random() + 1) * 100000).toInt()}"
 
@@ -28,7 +34,6 @@ object HeaderHelper {
             MD5("salt=${ApiCst.SALT}&t=$ts&r=$random&b=${body ?: ""}&q=${query ?: ""}")
         return "$ts,$random,$check"
     }
-
 
 
 }

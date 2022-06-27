@@ -14,4 +14,7 @@ object color {
     val explored = Color(0xFFA9E143)
     val explored2 = Color(0xFF3E6C10)
 
+    val black44 = Color(0x44000000)
+
+
 }

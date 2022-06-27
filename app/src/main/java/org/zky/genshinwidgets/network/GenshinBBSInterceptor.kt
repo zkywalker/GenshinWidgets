@@ -5,9 +5,6 @@ import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
 import org.zky.genshinwidgets.cst.ApiCst
-import org.zky.genshinwidgets.utils.MD5
-import org.zky.genshinwidgets.utils.loginCookie
-import java.util.*
 
 class GenshinBBSInterceptor : Interceptor {
 
@@ -29,15 +26,16 @@ class GenshinBBSInterceptor : Interceptor {
                 "Referer",
                 "https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?bbs_auth_required=true&act_id=${ApiCst.GENSHIN_ACT_ID}&utm_source=bbs&utm_medium=mys&utm_campaign=icon"
             )
+            .addHeader("Accept", "application/json, text/plain, */*")
             .addHeader("Accept-Encodinge", "gzip, deflate, br")
             .addHeader("x-rpc-app_version", "2.3.0")
             .addHeader("x-rpc-client_type", "5")
-            .addHeader("x-rpc-device_id",HeaderHelper.deviceId)
-        if (request.header("Cookie") == null) {
-            builder.addHeader("Cookie", loginCookie)
-        } else {
-            Log.d("kyle", "already has Cookie: ${request.header("Cookie")}")
-        }
+            .addHeader("x-rpc-device_id", HeaderHelper.deviceId)
+//        if (request.header("Cookie") == null) {
+//            builder.addHeader("Cookie", loginCookie)
+//        } else {
+//            Log.d("kyle", "already has Cookie: ${request.header("Cookie")}")
+//        }
         return chain.proceed(builder.build())
     }
 

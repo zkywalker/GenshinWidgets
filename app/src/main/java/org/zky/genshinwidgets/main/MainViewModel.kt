@@ -5,18 +5,18 @@ import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.zky.genshinwidgets.Account
-import org.zky.genshinwidgets.GameRole
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.ApiCst
+import org.zky.genshinwidgets.cst.SpCst
 import org.zky.genshinwidgets.database.DatabaseStore
-import org.zky.genshinwidgets.model.GameCharacter
-import org.zky.genshinwidgets.model.SignInfo
-import org.zky.genshinwidgets.model.SignReward
-import org.zky.genshinwidgets.model.UserRole
+import org.zky.genshinwidgets.model.*
 import org.zky.genshinwidgets.network.*
 import org.zky.genshinwidgets.utils.*
+import org.zky.genshinwidgets.widgets.isSameDate
+import java.util.*
 
 
 class MainViewModel : ViewModel() {
@@ -25,9 +25,11 @@ class MainViewModel : ViewModel() {
 
     val currentUseRole: MutableLiveData<UserRole> = MutableLiveData()
 
-//    var roleInfoSp: String by PreferenceDelegate(SpCst.KEY_ROLE_INFO, "")
+    var mainAccount: String by PreferenceDelegate(SpCst.KEY_SELECT_ACCOUNT, "")
 
-    val cookie: MutableLiveData<String> = MutableLiveData(loginCookie)
+    val accounts: MutableLiveData<List<Account>> = MutableLiveData()
+
+    val account: MutableLiveData<Account> = MutableLiveData()
 
     val signInfo = MutableLiveData<SignInfo?>()
 
@@ -37,15 +39,34 @@ class MainViewModel : ViewModel() {
 
     val characters = MutableLiveData<List<GameCharacter>>()
 
+    val activities = MutableLiveData<List<GameActivity>>()
+
+    val signResponse = MutableLiveData<Pair<Int, Int>>()
+
+    val showSignResponse = MutableLiveData(false)
+
     fun onPageStart() {
-        if (TextUtils.isEmpty(loginCookie)) {
+        val accounts = DatabaseStore.queries.selectAllAccounts().executeAsList()
+        this.accounts.value = accounts
+        if (accounts.isEmpty()) {
             return
         }
+        val acc: Account? = if (TextUtils.isEmpty(mainAccount)) {
+            accounts.first()
+        } else {
+            accounts.find {
+                it.account_id == mainAccount
+            }
+        }
+        if (acc == null) {
+            return
+        }
+        account.value = acc
+        mainAccount = acc.account_id
         viewModelScope.launch {
             pageRequesting.value = true
             val gameRoles = DatabaseStore.queries.selectAllRoles().executeAsList()
             if (gameRoles.isEmpty()) {
-                val accounts = DatabaseStore.queries.selectAllAccounts().executeAsList()
                 if (accounts.isNotEmpty()) {
                     roleInfo.value = requestUserRole(accounts)
                 }
@@ -57,11 +78,13 @@ class MainViewModel : ViewModel() {
                 if (current != null) {
                     currentUseRole.value = current
                     getSignInfo(current)
-                    val character = Request.getCharacter(current.game_uid, current.region)
-                    characters.value = character?.avatars
-                    Log.i("kyle", "character: $character")
+                    getCharacters(current)
                 }
             }
+
+            activities.value = Request.getGameActivity()?.list?.getTodayActivity()
+            // 欣赏500ms的loading，减少刷新频次
+            delay(500)
             pageRequesting.value = false
         }
     }
@@ -96,66 +119,144 @@ class MainViewModel : ViewModel() {
         return ret
     }
 
-    fun getSignInfo(role: UserRole?) {
+    suspend fun getSignInfo(role: UserRole?) {
+        val userRole = role ?: roleInfo.value?.first() ?: return
+        val account = DatabaseStore.queries.selectAccount(userRole.account_id).executeAsOne()
+        signReward.value = Request.getSignReward(account.cookie)
+        if (signInfo.value?.is_sign == true) {
+            DatabaseStore.queries.updateSignDate(Date().time, userRole.account_id)
+        }
+        signInfo.value =
+            Request.getSignInfo(
+                region = userRole.region,
+                uid = userRole.game_uid,
+                cookie = account.cookie
+            )
+    }
+
+    suspend fun sign(role: UserRole?): Boolean {
+        var useRole = role
+        if (useRole == null) {
+            useRole = if (roleInfo.value?.isNotEmpty() == true) {
+                roleInfo.value!!
+            } else {
+                requestUserRole(DatabaseStore.queries.selectAllAccounts().executeAsList())
+            }.first()
+        }
+        val account = DatabaseStore.queries.selectAccount(useRole.account_id).executeAsOne()
+        if (Request.sign(
+                uid = useRole.game_uid,
+                region = useRole.region,
+                cookie = account.cookie
+            )?.get("code") == "ok"
+        ) {
+            return true
+        }
+        return false
+    }
+
+    fun signMain(useRole: UserRole?) {
         viewModelScope.launch {
-            pageRequesting.value = true
-            val userRole = role ?: roleInfo.value?.first() ?: return@launch
-            val account = DatabaseStore.queries.selectAccount(userRole.account_id).executeAsOne()
-            signReward.value = Request.getSignReward(account.cookie)
-            signInfo.value =
-                Request.getSignInfo(
-                    region = userRole.region,
-                    uid = userRole.game_uid,
-                    cookie = account.cookie
-                )
-            pageRequesting.value = false
+            if (sign(useRole)) {
+                getSignInfo(useRole)
+                R.string.sign_success.toast()
+            }
         }
     }
 
-    fun sign(role: UserRole?) {
+    fun signAll() {
         viewModelScope.launch {
-            var useRole = role
-            if (useRole == null) {
-                useRole = if (roleInfo.value?.isNotEmpty() == true) {
-                    roleInfo.value!!
-                } else {
-                    requestUserRole(DatabaseStore.queries.selectAllAccounts().executeAsList())
-                }.first()
-            }
-            val account = DatabaseStore.queries.selectAccount(useRole.account_id).executeAsOne()
-            if (Request.sign(
-                    uid = useRole.game_uid,
-                    region = useRole.region,
-                    cookie = account.cookie
-                )?.get("code") == "ok"
-            ) {
-                getString(R.string.sign_success).toast()
-            }
-            getSignInfo(useRole)
+            pageRequesting.value = true
+            signResponse.value = signAllReal()
+            pageRequesting.value = false
+            showSignResponse.value = true
         }
+    }
+
+    private suspend fun signAllReal(): Pair<Int, Int> {
+        val gameRoles = DatabaseStore.queries.selectAllRoles().executeAsList().convertToUserRoles()
+        if (gameRoles.isEmpty()) {
+            return 0 to 0
+        }
+        var success = 0
+        gameRoles.forEach {
+            if (Date(it.sign_date).isSameDate()) {
+                success++
+            } else if (sign(it)) {
+                success++
+                DatabaseStore.queries.updateSignDate(Date().time, it.account_id)
+                if (currentUseRole.value?.game_uid == it.game_uid) {
+                    getSignInfo(currentUseRole.value)
+                }
+            }
+        }
+        return success to gameRoles.size
     }
 
     fun onSelectRole(it: UserRole) {
         currentUseRole.value = it
-        getSignInfo(it)
-    }
-
-    private fun List<GameRole>.convertToUserRoles(): List<UserRole> {
-        return map {
-            UserRole(
-                game_uid = it.game_uid,
-                game_biz = it.game_biz,
-                region = it.region,
-                region_name = it.region_name,
-                nickname = it.nickname,
-                level = it.level?.toString() ?: "",
-                is_chosen = it.is_chosen ?: false,
-                is_official = it.is_official ?: false,
-                account_id = it.account_id
-            )
+        viewModelScope.launch {
+            getSignInfo(it)
+            getCharacters(it)
         }
     }
 
+    private suspend fun getCharacters(userRole: UserRole, account: Account? = null) {
+        val acc = account ?: DatabaseStore.queries.selectAccount(userRole.account_id).executeAsOne()
+        val character =
+            Request.getCharacter(
+                userRole.game_uid,
+                userRole.region,
+                acc.cookie
+            )
+        characters.value = character?.avatars
+        Log.i("kyle", "character: $character")
+    }
+
+    fun saveAccountByCookie(cookie: String) {
+        insertAccountByCookie(cookie)
+    }
+
+    fun refreshSignInfo(value: UserRole?) {
+        viewModelScope.launch {
+            pageRequesting.value = true
+            getSignInfo(value)
+            pageRequesting.value = false
+        }
+    }
+
+    fun deleteAccount(it: String) {
+        DatabaseStore.queries.deleteAccount(it)
+        accounts.value = DatabaseStore.queries.selectAllAccounts().executeAsList()
+    }
+
+}
+
+// find all activity in today
+private fun List<GameActivity>.getTodayActivity(): List<GameActivity> {
+    val date = Date()
+    val currentTime = date.time / 1000
+    val cal: Calendar = Calendar.getInstance()
+    cal.time = date
+    val week = "${cal.get(Calendar.DAY_OF_WEEK)}"
+    return filter {
+        val start = it.start_time.toLongOrNull() ?: 0
+        val end = it.end_time.toLongOrNull() ?: 0
+        if (start != 0L && end != 0L && (currentTime < start || currentTime > end)) {
+            return@filter false
+        }
+        if (it.drop_day.isNotEmpty() && !it.drop_day.contains(week)) {
+            return@filter false
+        }
+        true
+//                it.kind != "4"
+    }.sortedWith { a, b ->
+        if (a.kind.equals(b.kind)) {
+            return@sortedWith (a.break_type.toIntOrNull()
+                ?: 0) - (b.break_type.toIntOrNull() ?: 0)
+        }
+        return@sortedWith (a.kind.toIntOrNull() ?: 0) - (b.kind.toIntOrNull() ?: 0)
+    }
 }
 
 

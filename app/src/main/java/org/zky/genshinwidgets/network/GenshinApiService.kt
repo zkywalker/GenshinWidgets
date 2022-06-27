@@ -45,4 +45,8 @@ interface GenshinApiService {
         @Body body: RequestBody,
         @Header("Cookie") cookie: String? = null
     ): Response<GetCharacter>
+
+    @GET
+    suspend fun getGameActivity(@Url url: String = ApiCst.API_URL_GAME_ACTIVITY, @Header("Cookie") cookie: String? = null): Response<GetGameActivity>
+
 }

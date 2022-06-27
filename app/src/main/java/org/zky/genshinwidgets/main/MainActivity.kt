@@ -11,48 +11,67 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.get
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberImagePainter
 import com.google.accompanist.flowlayout.FlowRow
+import kotlinx.coroutines.launch
+import org.zky.genshinwidgets.Account
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.ApiCst
-import org.zky.genshinwidgets.model.Element
-import org.zky.genshinwidgets.model.GameCharacter
+import org.zky.genshinwidgets.model.GameActivity
+import org.zky.genshinwidgets.model.getTypeName
 import org.zky.genshinwidgets.res.color
+import org.zky.genshinwidgets.res.icon
 import org.zky.genshinwidgets.ui.DefaultCard
+import org.zky.genshinwidgets.ui.LoadingView
 import org.zky.genshinwidgets.ui.SettingItemView
 import org.zky.genshinwidgets.ui.SpannerView
 import org.zky.genshinwidgets.utils.*
 import org.zky.genshinwidgets.webview.CookieInputDialog
 import org.zky.genshinwidgets.webview.WebLoginActivity
 import org.zky.genshinwidgets.widgets.Config
-import org.zky.genshinwidgets.widgets.WidgetsConfigActivity
+import org.zky.genshinwidgets.widgets.format
+import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var viewModel: MainViewModel
+    private val viewModel: MainViewModel by lazy {
+        ViewModelProvider(this).get()
+    }
 
     private lateinit var launcher: ActivityResultLauncher<Intent>
 
@@ -65,303 +84,543 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkCookie(cookie: String) {
         if (checkToken(cookie)) {
-            loginCookie = cookie
-            viewModel.cookie.value = cookie
+            viewModel.saveAccountByCookie(cookie)
             viewModel.onPageStart()
         } else {
             getString(R.string.get_cookie_fail).toast()
         }
     }
 
+    private val items = listOf(Screen.Main, Screen.Profile)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme(colors = MaterialTheme.colors.copy(primary = color.primary)) {
-                MainPage(viewModel())
+
+                val scope = rememberCoroutineScope()
+                val scaffoldState = rememberScaffoldState()
+                val navController = rememberNavController()
+                val showInfoDialog = remember { mutableStateOf(false) }
+                val signAllInfoDialog = viewModel.showSignResponse.observeAsState(false)
+                val pageRequesting = viewModel.pageRequesting.observeAsState(false)
+                val accountDialog = remember { mutableStateOf(false) }
+
+                Scaffold(
+                    scaffoldState = scaffoldState,
+                    topBar = {
+                        MainPageTopBar(model = viewModel, onMenuClick = {
+                            scope.launch { scaffoldState.drawerState.open() }
+                        })
+                    },
+                    bottomBar = { MainPageBottomBar(navController) },
+                    drawerContent = {
+                        MainDrawerView(
+                            viewModel = viewModel,
+                            onCopyCookie = {
+                                copyToClipboard(
+                                    it,
+                                    getString(R.string.copy_cookie_success)
+                                )
+                            },
+                            onCopyUID = { copyToClipboard(it) },
+                            onClickManageAccount = { accountDialog.value = true },
+                            onClickAddWidget = { },
+                            onClickSignAll = { viewModel.signAll() },
+                            onClickSetting = {},
+                            onClickDps = {},
+                            onClickAbout = { showInfoDialog.value = true },
+                        )
+                    }
+                ) {
+                    NavHost(
+                        navController,
+                        startDestination = Screen.Main.route,
+                        modifier = Modifier.padding(
+                            top = 15.dp,
+                            start = 15.dp,
+                            end = 15.dp,
+                            bottom = 55.dp
+                        ),
+                    ) {
+                        composable(Screen.Main.route) {
+                            MainPage(model = viewModel)
+                        }
+                        composable(Screen.Profile.route) {
+                            ProfilePage(model = viewModel)
+                        }
+                    }
+                    if (signAllInfoDialog.value) {
+                        SignAllInfoView()
+                    }
+                    if (accountDialog.value) {
+                        AccountsView(
+                            onDismissRequest = { accountDialog.value = false },
+                            onDelete = { viewModel.deleteAccount(it) },
+                            onAddAccount = { startActivityForResult<WebLoginActivity>(launcher) },
+                            onAddAccountByCookie = { }
+                        )
+                    }
+                    if (showInfoDialog.value) {
+                        VersionDialog { showInfoDialog.value = false }
+                    }
+                    if (pageRequesting.value) {
+                        LoadingView()
+                    }
+                }
             }
         }
         launcher = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult(),
-            activityResultCallback
+            ActivityResultContracts.StartActivityForResult(), activityResultCallback
         )
-        viewModel = ViewModelProvider(this).get()
 
         viewModel.onPageStart()
     }
 
     @Composable
+    private fun MainPageBottomBar(navController: NavController) {
+        BottomNavigation {
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentDestination = navBackStackEntry?.destination
+            items.forEach { screen ->
+                BottomNavigationItem(
+                    icon = {
+                        Icon(
+                            imageVector = screen.icon,
+                            contentDescription = getString(screen.resourceId)
+                        )
+                    },
+                    label = { Text(getString(screen.resourceId)) },
+                    selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                    onClick = {
+                        navController.navigate(screen.route) {
+                            // Pop up to the start destination of the graph to
+                            // avoid building up a large stack of destinations
+                            // on the back stack as users select items
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            // Avoid multiple copies of the same destination when
+                            // reselecting the same item
+                            launchSingleTop = true
+                            // Restore state when reselecting a previously selected item
+                            restoreState = true
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun ProfilePage(model: MainViewModel) {
+        val characters = model.characters.observeAsState()
+        val activities = model.activities.observeAsState()
+        Column(Modifier.verticalScroll(rememberScrollState())) {
+            DefaultCard(
+                text = getString(R.string.today_activities),
+                modifier = Modifier.padding(bottom = 10.dp)
+            ) {
+                activities.value?.let {
+                    // it cant nest with vertical scroll column
+//                LazyVerticalGrid(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    columns = GridCells.Adaptive(60.dp),
+//                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+//                    verticalArrangement = Arrangement.spacedBy(5.dp)
+//                ) {
+//                    items(it) { activity ->
+//                        ActivityView(activity)
+//                    }
+//                }
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        FlowRow(
+                            mainAxisSpacing = 5.dp,
+                            crossAxisSpacing = 5.dp
+                        ) {
+                            it.forEach { activity ->
+                                ActivityView(activity)
+                            }
+                        }
+                    }
+                }
+            }
+
+            DefaultCard(
+                text = getString(R.string.my_wives),
+                modifier = Modifier.padding(bottom = 10.dp)
+            ) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CharacterListView(characters.value)
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun ActivityView(activity: GameActivity) {
+        Box(
+            modifier = Modifier
+                .size(60.dp)
+                .clip(RoundedCornerShape(5.dp))
+        ) {
+            if (!TextUtils.isEmpty(activity.img_url)) {
+                Image(
+                    modifier = Modifier.fillMaxSize(),
+                    painter = rememberImagePainter(data = activity.img_url),
+                    contentDescription = activity.title,
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(color.primary)
+                )
+            }
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color(0x77444444)
+                            )
+                        )
+                    )
+                    .padding(3.dp)
+            ) {
+                Spacer(modifier = Modifier.weight(1f))
+                val start = (activity.start_time.toLongOrNull() ?: 0) * 1000
+                val end = (activity.end_time.toLongOrNull() ?: 0) * 1000
+                if (start != 0L && end != 0L) {
+                    Text(
+                        "${format.format(Date(start))}\n${format.format(Date(end))}",
+                        color = Color.White,
+                        fontSize = 7.sp
+                    )
+                }
+                if (activity.drop_day.isNotEmpty()) {
+                    Text(
+                        "星期:${activity.drop_day}",
+                        color = Color.White,
+                        fontSize = 7.sp
+                    )
+                }
+                Text(activity.title, color = Color.White, fontSize = 8.sp, maxLines = 1)
+            }
+        }
+    }
+
+    @Composable
     fun MainPage(model: MainViewModel) {
-        val scaffoldState = rememberScaffoldState()
-        val scope = rememberCoroutineScope()
-        val cookie = model.cookie.observeAsState("")
+        val account = model.account.observeAsState()
         val signInfo = model.signInfo.observeAsState()
         val signReward = model.signReward.observeAsState()
         val userRoles = model.roleInfo.observeAsState()
-        val userRole = model.currentUseRole.observeAsState()
-        val showInfoDialog = remember { mutableStateOf(false) }
         val showCookieInputDialog = remember { mutableStateOf(false) }
-        val showSpannerDialog = remember { mutableStateOf(false) }
-        val pageRequesting = model.pageRequesting.observeAsState()
         val characters = model.characters.observeAsState()
+        val activities = model.activities.observeAsState()
 
-        Scaffold(
-            scaffoldState = scaffoldState,
-            topBar = {
-                MainPageTopBar(
-                    onMenuClick = {
-//                        scope.launch { scaffoldState.drawerState.open() }
-                    },
-                    onInfoClick = { showInfoDialog.value = !showInfoDialog.value }
-                )
-            },
-//            drawerContent = { MainDrawerView() }
+        Column(
+            Modifier
+                .verticalScroll(rememberScrollState())
         ) {
+
+            val userRoleList = userRoles.value
+            when {
+                TextUtils.isEmpty(account.value?.cookie) -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = getString(R.string.login_plz))
+                    }
+                }
+                userRoleList?.isNotEmpty() != true -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = getString(R.string.seems_you_donot_have_role))
+                    }
+                }
+            }
+            if (!TextUtils.isEmpty(account.value?.cookie)) {
+                DefaultCard(
+                    text = getString(R.string.genshin_sign),
+                    modifier = Modifier.padding(bottom = 10.dp)
+                ) {
+                    SignView(signInfo = signInfo.value,
+                        signReward = signReward.value,
+                        onRefreshSignInfo = { viewModel.refreshSignInfo(viewModel.currentUseRole.value) },
+                        onRequestSign = { viewModel.signMain(viewModel.currentUseRole.value) })
+                }
+            }
+            if (activities.value?.isNotEmpty() == true) {
+                DefaultCard(
+                    text = getString(R.string.foster_wives),
+                    modifier = Modifier.padding(bottom = 10.dp)
+                ) {
+                    val tempList = characters.value?.filter {
+                        activities.value?.find { it2 -> it.name == it2.title } != null
+                    }
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CharacterListView(tempList)
+                    }
+                }
+            }
+            DefaultCard(
+                text = getString(R.string.observation_pivot),
+                modifier = Modifier.padding(bottom = 10.dp)
+            ) {
+                ObservationPivotView(
+                    onClickTodayMaterial = {
+                        startWebViwActivity(
+                            getString(R.string.today_material),
+                            ApiCst.WEB_URL_TODAY_MATERIAL
+//                            "https://webstatic.mihoyo.com/app/community-game-records/index.html?bbs_presentation_style=fullscreen#/ys/role/all?role_id=165255180&server=cn_gf01&access=1"
+                        )
+                    },
+                    onClickMap = {
+                        startWebViwActivity(
+                            getString(R.string.map), ApiCst.WEB_URL_GENSHIN_MAP
+                        )
+                    },
+                    onClickWiki = {
+                        startWebViwActivity(
+                            getString(R.string.wiki), ApiCst.WEB_URL_ROLE_WIKI
+                        )
+                    },
+                )
+            }
+            DefaultCard(
+                text = getString(R.string.start_app),
+                modifier = Modifier.padding(bottom = 10.dp)
+            ) {
+                JumpAppView(
+                    onClickGenshin = { launchApp(ApiCst.APP_PACKAGE_NAME_GENSHIN) },
+                    onClickCloud = { launchApp(ApiCst.APP_PACKAGE_NAME_GENSHIN_CLOUD) },
+                    onClickBBS = { launchApp(ApiCst.APP_PACKAGE_NAME_BBS) },
+                )
+            }
+        }
+
+        if (showCookieInputDialog.value) {
+            CookieInputDialog(onDismissRequest = { showCookieInputDialog.value = false },
+                onSubmit = {
+                    checkCookie(it)
+                })
+        }
+    }
+
+    @Composable
+    fun MainDrawerView(
+        viewModel: MainViewModel,
+        onCopyCookie: (String) -> Unit,
+        onCopyUID: (String) -> Unit,
+        onClickManageAccount: () -> Unit,
+        onClickAddWidget: () -> Unit,
+        onClickSignAll: () -> Unit,
+        onClickSetting: () -> Unit,
+        onClickDps: () -> Unit,
+        onClickAbout: () -> Unit
+    ) {
+        val account = viewModel.account.observeAsState().value
+        val role = viewModel.currentUseRole.observeAsState().value
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
+            Image(
+                painter = painterResource(id = R.drawable.bg_drawer_keli),
+                contentDescription = "drawer",
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.FillWidth
+            )
             Column(
                 Modifier
-                    .padding(15.dp)
-                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color(0xff444444)
+                            )
+                        )
+                    )
+                    .padding(10.dp)
             ) {
-                CharacterListView(characters.value)
-                val userRoleList = userRoles.value
-                when {
-                    pageRequesting.value == true -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(100.dp), contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                    TextUtils.isEmpty(cookie.value) -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(100.dp), contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = getString(R.string.login_plz))
-                        }
-                    }
-                    userRoleList?.isNotEmpty() != true -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(100.dp), contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = getString(R.string.seems_you_donot_have_role))
-                        }
-                    }
-                    else -> {
-                        SpannerView(
-                            modifier = Modifier.padding(bottom = 10.dp),
-                            expanded = showSpannerDialog.value,
-                            onVisibilityChange = { s -> showSpannerDialog.value = s },
-                            data = userRoleList,
-                            defaultIndex = userRoleList.indexOf(userRole.value),
-                            itemContentGetter = { i, it ->
-                                val text =
-                                    if (i == -1) {
-                                        "${getString(R.string.hello_traveler)} ${it?.nickname ?: ""}(${it?.region_name} Lv.${it?.level ?: "?"})"
-                                    } else {
-                                        "${it?.nickname ?: ""}(${it?.region_name} Lv.${it?.level ?: "?"})"
-                                    }
-                                Text(
-                                    text = text,
-                                    fontSize = 17.sp
-                                )
-                            },
-                            onItemClick = { i, it ->
-                                viewModel.onSelectRole(it)
-                            }
-                        )
-                        DefaultCard(
-                            modifier = Modifier.padding(bottom = 10.dp)
-                        ) {
-                            UserRoleView(
-                                userRole = userRole.value,
-                                onRefresh = { viewModel.onPageStart() },
-                                copyUid = ::copyToClipboard
-                            )
-                        }
-                    }
-                }
-
-                DefaultCard(
-                    text = getString(R.string.cookie_info),
-                    modifier = Modifier.padding(bottom = 10.dp)
-                ) {
-                    CookieView(
-                        cookie = cookie.value,
-                        onLaunchToCookiePage = { startActivityForResult<WebLoginActivity>(launcher) },
-                        onInputCookie = { showCookieInputDialog.value = true },
-                        copyToClipboard = ::copyToClipboard,
-                        clearCookie = ::clearCookie
+                Spacer(modifier = Modifier.weight(1f))
+                if (role != null) {
+                    Text(
+                        text = "${role.nickname} (${role.region_name} Lv.${role.level})",
+                        color = Color.White
                     )
                 }
-                if (!TextUtils.isEmpty(cookie.value)) {
-                    DefaultCard(
-                        text = getString(R.string.genshin_sign),
-                        modifier = Modifier.padding(bottom = 10.dp)
-                    ) {
-                        SignView(
-                            signInfo = signInfo.value,
-                            signReward = signReward.value,
-                            onRefreshSignInfo = { viewModel.getSignInfo(viewModel.currentUseRole.value) },
-                            onRequestSign = { viewModel.sign(viewModel.currentUseRole.value) }
-                        )
-                    }
-                }
-                DefaultCard(
-                    text = getString(R.string.observation_pivot),
-                    modifier = Modifier.padding(bottom = 10.dp)
-                ) {
-                    ObservationPivotView(
-                        onClickTodayMaterial = {
-                            startWebViwActivity(
-                                getString(R.string.today_material),
-//                                ApiCst.WEB_URL_TODAY_MATERIAL
-                                "https://webstatic.mihoyo.com/app/community-game-records/index.html?bbs_presentation_style=fullscreen#/ys/role/all?role_id=165255180&server=cn_gf01&access=1"
-                            )
-                        },
-                        onClickMap = {
-                            startWebViwActivity(
-                                getString(R.string.map),
-                                ApiCst.WEB_URL_GENSHIN_MAP
-                            )
-                        },
-                        onClickWiki = {
-                            startWebViwActivity(
-                                getString(R.string.wiki),
-                                ApiCst.WEB_URL_ROLE_WIKI
-                            )
-                        },
-                    )
-                }
-                DefaultCard(
-                    text = getString(R.string.start_app),
-                    modifier = Modifier.padding(bottom = 10.dp)
-                ) {
-                    JumpAppView(
-                        onClickGenshin = { launchApp(ApiCst.APP_PACKAGE_NAME_GENSHIN) },
-                        onClickCloud = { launchApp(ApiCst.APP_PACKAGE_NAME_GENSHIN_CLOUD) },
-                        onClickBBS = { launchApp(ApiCst.APP_PACKAGE_NAME_BBS) },
-                    )
-                }
-            }
-
-            if (showInfoDialog.value) {
-                VersionDialog { showInfoDialog.value = false }
-            }
-            if (showCookieInputDialog.value) {
-                CookieInputDialog(
-                    onDismissRequest = { showCookieInputDialog.value = false },
-                    onSubmit = {
-                        checkCookie(it)
-                    })
-            }
-        }
-    }
-
-    @Composable
-    fun CharacterListView(value: List<GameCharacter>?) {
-        value ?: return
-        FlowRow(mainAxisSpacing = 4.dp, crossAxisSpacing = 4.dp) {
-            value.forEach {
-                Box(Modifier.size(56.dp, 68.dp)) {
-                    var ic_star = R.drawable.icon_character_5_star
-                    var bg_star = R.drawable.bg_character_5_star
-                    when (it.rarity) {
-                        4 -> {
-                            ic_star = R.drawable.icon_character_4_star
-                            bg_star = R.drawable.bg_character_4_star
-                        }
-                        5 -> {
-                            ic_star = R.drawable.icon_character_5_star
-                            bg_star = R.drawable.bg_character_5_star
-                        }
-                        else -> {
-                            bg_star = R.drawable.bg_character_105_star
-                        }
-                    }
-                    Image(
-                        modifier = Modifier.fillMaxSize(),
-                        painter = painterResource(id = bg_star),
-                        contentDescription = "bg"
-                    )
-
-                    Box(contentAlignment = Alignment.BottomEnd) {
-                        Image(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            painter = rememberImagePainter(data = it.icon),
-                            contentDescription = it.name
-                        )
-                        Image(
-                            painter = painterResource(id = R.drawable.icon_character_lb),
-                            contentDescription = null
-                        )
-                    }
-                    val element = Element.getElementByName(it.element)
-                    if (element != null) {
-                        Image(
-                            modifier = Modifier
-                                .size(16.dp, 16.dp)
-                                .padding(1.dp),
-                            painter = painterResource(id = element.icon),
-                            contentDescription = element.name
-                        )
-                    }
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Spacer(Modifier.weight(1f))
-                        Image(
-                            modifier = Modifier
-                                .height(11.dp),
-                            painter = painterResource(id = ic_star), contentDescription = "ic"
-                        )
+                if (account != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            modifier = Modifier.offset(y = (-1).dp),
-                            text = "Lv.${it.level}",
-                            fontSize = 8.sp
+                            text = "${account.getTypeName()}ID:${account.account_id}",
+                            color = Color.White
+                        )
+                        Image(
+                            modifier = Modifier
+                                .padding(start = 5.dp)
+                                .size(15.dp)
+                                .clickable(onClick = { onCopyCookie(account.cookie) }),
+                            painter = painterResource(id = R.drawable.ic_baseline_cookie_24_w),
+                            contentDescription = "copy cookie"
+                        )
+                    }
+                }
+                if (role != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "UID:${role.game_uid}", color = Color.White)
+                        Image(
+                            modifier = Modifier
+                                .padding(start = 5.dp)
+                                .size(15.dp)
+                                .clickable(onClick = { onCopyUID(role.game_uid) }),
+                            painter = painterResource(id = R.drawable.ic_baseline_content_copy_24),
+                            contentDescription = "copy uid"
                         )
                     }
                 }
             }
         }
-    }
 
-    @Composable
-    fun ColumnScope.MainDrawerView() {
-        Image(
-            painter = painterResource(id = R.drawable.bg_drawer_keli),
-            contentDescription = "drawer",
-            modifier = Modifier.fillMaxWidth(),
-            contentScale = ContentScale.FillWidth
+        SettingItemView(
+            text = getString(R.string.manage_account),
+            imageRes = R.drawable.ic_baseline_account_circle_24_b,
+            onClick = onClickManageAccount
         )
         SettingItemView(
-            text = getString(R.string.widget_setting),
-            imageRes = R.drawable.ic_baseline_cookie_24
-        ) {
-            startActivity<WidgetsConfigActivity>()
+            text = getString(R.string.add_widget), imageRes = R.drawable.ic_baseline_widgets_24_b,
+            onClick = onClickAddWidget
+        )
+        SettingItemView(
+            text = getString(R.string.sign_all_role),
+            imageRes = R.drawable.ic_baseline_assignment_turned_in_24_b,
+            onClick = onClickSignAll
+        )
+        SettingItemView(
+            text = getString(R.string.settings), imageRes = R.drawable.ic_baseline_settings_24_b,
+            onClick = onClickSetting
+        )
+        SettingItemView(
+            text = getString(R.string.deps), imageRes = R.drawable.ic_baseline_api_24_b,
+            onClick = onClickDps
+        )
+        SettingItemView(
+            text = getString(R.string.about), imageRes = R.drawable.ic_baseline_info_24,
+            onClick = onClickAbout
+        )
+
+    }
+
+    @Composable
+    fun AccountsView(
+        onDismissRequest: () -> Unit,
+        onDelete: (String) -> Unit,
+        onAddAccount: () -> Unit,
+        onAddAccountByCookie: () -> Unit
+    ) {
+        val accounts = viewModel.accounts.observeAsState().value
+        Dialog(onDismissRequest = onDismissRequest) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column {
+                    if (accounts?.isNotEmpty() == true) {
+                        accounts.forEachIndexed { index, account ->
+                            AccountItemView(index, account, onDelete)
+                        }
+                    } else {
+                        Text(text = getString(R.string.no_account))
+                    }
+
+                    Row {
+                        Text(text = getString(R.string.add_account))
+                        Button(onClick = onAddAccount) {
+                            Text(text = getString(R.string.web_login))
+                        }
+                        Button(onClick = onAddAccountByCookie) {
+                            Text(text = getString(R.string.cookie_login))
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    @Composable
+    fun AccountItemView(index: Int, it: Account, onDelete: (String) -> Unit) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "$index ${it.getTypeName()}ID:${it.account_id}",
+            )
+            Image(
+                modifier = Modifier
+                    .padding(start = 5.dp)
+                    .size(15.dp)
+                    .clickable(onClick = { onDelete(it.account_id) }),
+                painter = painterResource(id = R.drawable.ic_baseline_delete_outline_24_r),
+                contentDescription = "delete"
+            )
+        }
+    }
+
+    @Composable
+    fun SignAllInfoView() {
+        val info = viewModel.signResponse.observeAsState(0 to 0)
+        AlertDialog(onDismissRequest = { viewModel.showSignResponse.value = false },
+            title = { Text(text = getString(R.string.sign_response)) },
+            text = {
+                when {
+                    info.value.second == 0 -> {
+                        Text(text = getString(R.string.data_error))
+                    }
+                    info.value.first == 0 -> {
+                        Text(text = getString(R.string.sign_fail))
+                    }
+                    info.value.first == info.value.second -> {
+                        Text(text = "${getString(R.string.sign_success)}(${info.value.first}/${info.value.second})")
+                    }
+                    else -> {
+                        Text(text = "${getString(R.string.sign_end)}(${info.value.first}/${info.value.second})")
+                    }
+                }
+            },
+            buttons = {})
+
     }
 
     @Composable
     fun VersionDialog(onDismissRequest: () -> Unit) {
         var crashReport by remember { mutableStateOf(Config.crashReport) }
-        AlertDialog(
-            onDismissRequest = onDismissRequest,
+        AlertDialog(onDismissRequest = onDismissRequest,
             title = { Text("${getString(R.string.app_name)} v${getAppVersionName()}") },
             text = {
                 Column(Modifier.fillMaxWidth()) {
-                    Text(
-                        getString(R.string.github_repository),
+                    Text(getString(R.string.github_repository),
                         fontSize = 11.sp,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { startBrowser(getString(R.string.github_repository)) })
+
+                    Divider(
+                        Modifier
+                            .padding(top = 5.dp, bottom = 5.dp)
+                            .height(1.dp)
+                    )
+                    Text(text = getString(R.string.permission_info))
+                    Text(text = getString(R.string.permission_info_network))
+                    Text(text = getString(R.string.permission_info_storage))
+                    Text(text = getString(R.string.permission_info_wake_app))
+                    Text(text = getString(R.string.permission_info_clipboard))
+
                     Divider(
                         Modifier
                             .padding(top = 5.dp, bottom = 5.dp)
@@ -380,18 +639,7 @@ class MainActivity : AppCompatActivity() {
                             .padding(top = 5.dp, bottom = 5.dp)
                             .height(1.dp)
                     )
-                    Text(text = getString(R.string.permission_info))
-                    Text(text = getString(R.string.permission_info_network))
-                    Text(text = getString(R.string.permission_info_storage))
-                    Text(text = getString(R.string.permission_info_wake_app))
-                    Text(text = getString(R.string.permission_info_clipboard))
-                    Divider(
-                        Modifier
-                            .padding(top = 5.dp, bottom = 5.dp)
-                            .height(1.dp)
-                    )
-                    Text(
-                        getString(R.string.issue_report),
+                    Text(getString(R.string.issue_report),
                         fontFamily = FontFamily.Monospace,
                         textDecoration = TextDecoration.Underline,
                         modifier = Modifier
@@ -399,41 +647,79 @@ class MainActivity : AppCompatActivity() {
                             .clickable { startBrowser(getString(R.string.issue_report_url)) })
                 }
             },
-            buttons = {}
+            buttons = {})
+    }
+
+    @Composable
+    private fun MainPageTopBar(
+        model: MainViewModel,
+        onMenuClick: () -> Unit,
+    ) {
+        TopAppBar(
+            navigationIcon = {
+                Icon(
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = "menu",
+                    modifier = Modifier
+                        .padding(start = 10.dp)
+                        .clickable(onClick = onMenuClick)
+                )
+            },
+            title = {
+                val userRoles = model.roleInfo.observeAsState()
+                val userRole = model.currentUseRole.observeAsState()
+                val showSpannerDialog = remember { mutableStateOf(false) }
+                val userRoleList = userRoles.value ?: return@TopAppBar
+                SpannerView(
+                    expanded = showSpannerDialog.value,
+                    onVisibilityChange = { s -> showSpannerDialog.value = s },
+                    data = userRoleList,
+                    defaultIndex = userRoleList.indexOf(userRole.value),
+                    itemContentGetter = { i, it ->
+                        val text = if (i == -1) {
+                            "${getString(R.string.hello_traveler)} ${it?.nickname ?: ""}"
+                        } else {
+                            "${it?.nickname ?: ""}(${it?.region_name} Lv.${it?.level ?: "?"})"
+                        }
+                        Text(
+                            text = text, fontSize = 17.sp
+                        )
+                    },
+                    onItemClick = { _, it ->
+                        viewModel.onSelectRole(it)
+                    })
+            },
+            actions = {
+                IconButton(
+                    onClick = {
+                        viewModel.onPageStart()
+                    },
+                    content = {
+                        Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = "info",
+                            modifier = Modifier
+                                .padding(start = 10.dp)
+                        )
+                    }
+                )
+            }
         )
     }
 
-    @Composable()
-    private fun MainPageTopBar(onMenuClick: () -> Unit, onInfoClick: () -> Unit) {
-        TopAppBar(
-//            navigationIcon = {
-//                Icon(
-//                    imageVector = Icons.Filled.Menu,
-//                    contentDescription = "menu",
-//                    modifier = Modifier
-//                        .padding(start = 10.dp)
-//                        .clickable(onClick = onMenuClick)
-//                )
-//            },
-            title = { Text(text = getString(R.string.app_name)) },
-            actions = {
-                IconButton(onClick = onInfoClick) {
-                    Icon(imageVector = Icons.Filled.Info, contentDescription = "info")
-                }
-            })
-    }
-
-    // todo its not working now -_-
-    private fun clearCookie() {
-        loginCookie = ""
-        viewModel.cookie.value = ""
-    }
-
-    private fun copyToClipboard(value: String) {
+    private fun copyToClipboard(
+        value: String,
+        toastMsg: String = getString(R.string.copy_to_clipboard)
+    ) {
         val clipboardManager =
             getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
         clipboardManager.setPrimaryClip(ClipData.newPlainText("cookie", value))
-        getString(R.string.copy_to_clipboard).toast()
+        toastMsg.toast()
+    }
+
+    sealed class Screen(val route: String, @StringRes val resourceId: Int, val icon: ImageVector) {
+        object Main : Screen("main", R.string.main, icon.star)
+        object Profile : Screen("profile", R.string.profile, Icons.Filled.AccountCircle)
     }
 
 }

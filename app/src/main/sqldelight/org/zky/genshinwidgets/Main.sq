@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS Account (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     account_id TEXT NOT NULL,
-    cookie TEXT,
+    cookie TEXT NOT NULL DEFAULT '',
     cookie_updated_at INTEGER DEFAULT 0,
     nick_name TEXT,
     type TEXT
@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS  GameRole (
     level INTEGER DEFAULT 0,
     is_chosen INTEGER AS Boolean DEFAULT 0,
     is_official INTEGER AS Boolean  DEFAULT 0,
+    sign_date INTEGER DEFAULT 0,
     FOREIGN KEY(account_id) REFERENCES Account(id)
 );
 
@@ -50,3 +51,11 @@ VALUES (?,?, ?, ?, ?);
 insertGameRole:
 INSERT INTO GameRole (account_id, game_uid, game_biz, region, region_name, nickname, level, is_chosen, is_official)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteAccount:
+DELETE FROM Account WHERE account_id = :account_id;
+
+updateSignDate:
+UPDATE GameRole
+SET sign_date = :sign_date
+WHERE game_uid = :gameUid;

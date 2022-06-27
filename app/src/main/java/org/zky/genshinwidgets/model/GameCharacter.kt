@@ -10,6 +10,7 @@ data class GameCharacter(
     val fetter: Int,
     val level: Int,
     val rarity: Int,
+    val actived_constellation_num: Int,
 )
 
 //{
