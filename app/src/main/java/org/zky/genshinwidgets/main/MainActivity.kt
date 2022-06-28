@@ -55,6 +55,7 @@ import org.zky.genshinwidgets.model.GameActivity
 import org.zky.genshinwidgets.model.getTypeName
 import org.zky.genshinwidgets.res.color
 import org.zky.genshinwidgets.res.icon
+import org.zky.genshinwidgets.res.themes
 import org.zky.genshinwidgets.ui.DefaultCard
 import org.zky.genshinwidgets.ui.LoadingView
 import org.zky.genshinwidgets.ui.SettingItemView
@@ -96,8 +97,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme(colors = MaterialTheme.colors.copy(primary = color.primary)) {
-
+            themes.Theme {
                 val scope = rememberCoroutineScope()
                 val scaffoldState = rememberScaffoldState()
                 val navController = rememberNavController()
@@ -433,7 +433,7 @@ class MainActivity : AppCompatActivity() {
     ) {
         val account = viewModel.account.observeAsState().value
         val role = viewModel.currentUseRole.observeAsState().value
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
+        Box(modifier = Modifier.fillMaxWidth().background(themes.colors.surface), contentAlignment = Alignment.BottomStart) {
             Image(
                 painter = painterResource(id = R.drawable.bg_drawer_keli),
                 contentDescription = "drawer",

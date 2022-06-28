@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.model.Element
+import org.zky.genshinwidgets.res.themes
 import org.zky.genshinwidgets.utils.toast
 
 
@@ -32,7 +33,11 @@ public fun ColumnScope.DefaultCard(
     if (text != null) {
         Text(text = text, modifier = Modifier.padding(bottom = 10.dp), fontSize = 17.sp)
     }
-    Card(modifier.fillMaxWidth()) {
+    Card(
+        modifier.fillMaxWidth(),
+        backgroundColor = themes.colors.surface,
+        contentColor = contentColorFor(themes.colors.surface)
+    ) {
         Box(Modifier.padding(10.dp)) {
             content()
         }
@@ -163,7 +168,7 @@ fun LoadingView(modifier: Modifier = Modifier, onDismissRequest: () -> Unit = {}
         val image = index % Element.all.size
 
         Image(
-            modifier = Modifier.size(50.dp).alpha(alpha),
+            modifier = Modifier.size(45.dp).alpha(alpha),
             painter = painterResource(id = Element.all[image].icon),
             contentDescription = ""
         )

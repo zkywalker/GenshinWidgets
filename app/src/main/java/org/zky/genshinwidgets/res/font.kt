@@ -4,8 +4,13 @@ import androidx.compose.ui.unit.sp
 
 object font {
 
-    val titleSize = 18.sp
-    val subtitleSize = 16.sp
-    val bodySize = 14.sp
+    val titleL = 22.sp
+    val titleM = 16.sp
+    val titleS = 14.sp
+
+    val bodyL = 16.sp
+    val bodyM = 14.sp
+    val bodyS = 12.sp
+
 
 }

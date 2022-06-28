@@ -15,7 +15,6 @@ import com.google.accompanist.flowlayout.FlowRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.AlertDialog
-import androidx.compose.material.Card
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -167,7 +166,7 @@ fun SignView(
                         .padding(5.dp),
                     contentDescription = rewardItem.name
                 )
-                Text(text = "${rewardItem.name} x ${rewardItem.cnt}")
+                Text(text = "${rewardItem.name} x${rewardItem.cnt}")
             }
             if (!signInfo.is_sign) {
                 Button(onClick = onRequestSign, modifier = Modifier.padding(start = 10.dp)) {
@@ -220,13 +219,13 @@ fun SignRewardsView(signInfo: SignInfo, signReward: SignReward?) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = "Day ${index + 1}", fontSize = font.bodySize)
+                        Text(text = "Day ${index + 1}", fontSize = font.bodyM)
                         Image(
                             painter = rememberImagePainter(data = rewardItem.icon),
                             modifier = Modifier.size(24.dp),
                             contentDescription = rewardItem.name
                         )
-                        Text(text = "x ${rewardItem.cnt}", fontSize = font.bodySize)
+                        Text(text = "x ${rewardItem.cnt}", fontSize = font.bodyM)
                     }
                     if (signInfo.total_sign_day >= index + 1) {
                         Image(

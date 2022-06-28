@@ -14,6 +14,7 @@ import android.util.Log
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
+import androidx.compose.ui.graphics.Color
 import com.google.gson.Gson
 import org.zky.genshinwidgets.cst.SpCst
 import org.zky.genshinwidgets.webview.WebViewActivity
@@ -57,6 +58,9 @@ fun Int.toast() {
 }
 
 fun getString(stringRes: Int): String = application.getString(stringRes)
+
+fun getColor(stringRes: Int): Color = Color(application.getColor(stringRes))
+
 
 fun safeRun(runnable: () -> Unit) {
     try {

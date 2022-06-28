@@ -26,7 +26,7 @@
         <activity
             android:name=".webview.WebViewActivity"
             android:exported="false"
-            android:theme="@style/Theme.GenshinWidgets2" />
+            />
         <activity
             android:name=".widgets.WidgetsConfigActivity"
             android:exported="false">
