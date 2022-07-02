@@ -60,7 +60,7 @@ android {
             if (buildType == 'release') {
                 updateVersionJson(defaultConfig.versionCode, defaultConfig.versionName)
             }
-            outputFileName = "genshinWidgets_" + buildType.name + "_" + defaultConfig.versionCode + "_v" + defaultConfig.versionName + ".apk"
+            outputFileName = "genshin_widgets_" + buildType.name + "_" + defaultConfig.versionCode + "_v" + defaultConfig.versionName + ".apk"
         }
     }
 
