@@ -13,10 +13,7 @@ import org.zky.genshinwidgets.cst.ApiCst
 import org.zky.genshinwidgets.model.*
 import org.zky.genshinwidgets.utils.*
 import org.zky.genshinwidgets.widgets.format
-import org.zky.genshinwidgets.widgets.signDate
-import retrofit2.Call
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
@@ -65,7 +62,8 @@ object Request {
         return requestTry {
             api.sign(body, cookie = cookie).handleResponse {
                 if (it == -5003) {
-                    signDate = format.format(Date())
+                    // todo 入库
+//                    signDate = format.format(Date())
                 }
                 false
             }

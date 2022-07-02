@@ -168,7 +168,7 @@ fun LoadingView(modifier: Modifier = Modifier, onDismissRequest: () -> Unit = {}
         val image = index % Element.all.size
 
         Image(
-            modifier = Modifier.size(45.dp).alpha(alpha),
+            modifier = Modifier.size(40.dp).alpha(alpha),
             painter = painterResource(id = Element.all[image].icon),
             contentDescription = ""
         )

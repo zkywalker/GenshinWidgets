@@ -48,6 +48,7 @@
             </intent-filter>
         </activity>
 
+
         <receiver
             android:name=".widgets.GlanceReceiver"
             android:enabled="@bool/glance_appwidget_available"
@@ -75,6 +76,8 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+        <receiver android:name=".widgets.PinBroadcastReceiver"
+            android:enabled="true"/>
     </application>
 
 </manifest>

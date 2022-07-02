@@ -3,6 +3,7 @@ package org.zky.genshinwidgets.main
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
@@ -51,11 +52,10 @@ import kotlinx.coroutines.launch
 import org.zky.genshinwidgets.Account
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.ApiCst
+import org.zky.genshinwidgets.cst.SpCst
 import org.zky.genshinwidgets.model.GameActivity
 import org.zky.genshinwidgets.model.getTypeName
-import org.zky.genshinwidgets.res.color
-import org.zky.genshinwidgets.res.icon
-import org.zky.genshinwidgets.res.themes
+import org.zky.genshinwidgets.res.*
 import org.zky.genshinwidgets.ui.DefaultCard
 import org.zky.genshinwidgets.ui.LoadingView
 import org.zky.genshinwidgets.ui.SettingItemView
@@ -64,6 +64,7 @@ import org.zky.genshinwidgets.utils.*
 import org.zky.genshinwidgets.webview.CookieInputDialog
 import org.zky.genshinwidgets.webview.WebLoginActivity
 import org.zky.genshinwidgets.widgets.Config
+import org.zky.genshinwidgets.widgets.WidgetsConfigActivity
 import org.zky.genshinwidgets.widgets.format
 import java.util.*
 
@@ -105,6 +106,10 @@ class MainActivity : AppCompatActivity() {
                 val signAllInfoDialog = viewModel.showSignResponse.observeAsState(false)
                 val pageRequesting = viewModel.pageRequesting.observeAsState(false)
                 val accountDialog = remember { mutableStateOf(false) }
+                val showCookieInputDialog = remember { mutableStateOf(false) }
+                val settingsDialog = remember { mutableStateOf(false) }
+                val depsDialog = remember { mutableStateOf(false) }
+                val showAddWidgetAlert = viewModel.showAddWidgetAlert.observeAsState(false)
 
                 Scaffold(
                     scaffoldState = scaffoldState,
@@ -125,10 +130,10 @@ class MainActivity : AppCompatActivity() {
                             },
                             onCopyUID = { copyToClipboard(it) },
                             onClickManageAccount = { accountDialog.value = true },
-                            onClickAddWidget = { },
+                            onClickAddWidget = { addWidget() },
                             onClickSignAll = { viewModel.signAll() },
-                            onClickSetting = {},
-                            onClickDps = {},
+                            onClickSetting = { settingsDialog.value = true },
+                            onClickDps = { depsDialog.value = true },
                             onClickAbout = { showInfoDialog.value = true },
                         )
                     }
@@ -144,22 +149,48 @@ class MainActivity : AppCompatActivity() {
                         ),
                     ) {
                         composable(Screen.Main.route) {
-                            MainPage(model = viewModel)
+                            MainPage(model = viewModel) {
+                                accountDialog.value = true
+                            }
                         }
                         composable(Screen.Profile.route) {
                             ProfilePage(model = viewModel)
                         }
                     }
+
+                    if (showAddWidgetAlert.value) {
+                        AlertAddWidget()
+                    }
                     if (signAllInfoDialog.value) {
                         SignAllInfoView()
+                    }
+                    if (settingsDialog.value) {
+                        SettingsView { settingsDialog.value = false }
+                    }
+                    if (depsDialog.value) {
+                        DepsView { depsDialog.value = false }
                     }
                     if (accountDialog.value) {
                         AccountsView(
                             onDismissRequest = { accountDialog.value = false },
                             onDelete = { viewModel.deleteAccount(it) },
-                            onAddAccount = { startActivityForResult<WebLoginActivity>(launcher) },
-                            onAddAccountByCookie = { }
+                            onAddAccount = {
+                                startActivityForResult<WebLoginActivity>(launcher)
+                                accountDialog.value = false
+                            },
+                            onAddAccountByCookie = {
+                                showCookieInputDialog.value = true
+                                accountDialog.value = false
+                            },
+                            onCopyCookie = { copyToClipboard(it) },
                         )
+                    }
+                    if (showCookieInputDialog.value) {
+                        CookieInputDialog(
+                            onDismissRequest = { showCookieInputDialog.value = false },
+                            onSubmit = {
+                                checkCookie(it)
+                            })
                     }
                     if (showInfoDialog.value) {
                         VersionDialog { showInfoDialog.value = false }
@@ -178,6 +209,109 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable
+    fun AlertAddWidget() {
+        AlertDialog(
+            onDismissRequest = { viewModel.showAddWidgetAlert.value = false },
+            title = { Text(getString(R.string.add_widget_alert)) },
+            text = { Text(getString(R.string.add_widget_alert_text)) },
+            buttons = {
+                Row(Modifier.padding(10.dp)) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Button(
+                        modifier = Modifier.padding(end = 5.dp),
+                        onClick = {
+                            startActivity<WidgetsConfigActivity>()
+                            viewModel.showAddWidgetAlert.value = false
+                            Sp.setValue(SpCst.KEY_SHOW_ADD_WIDGET_ALERT, false)
+                        }) {
+                        Text(text = getString(R.string.add_widget_alert_button))
+                    }
+                    Button(onClick = { viewModel.showAddWidgetAlert.value = false }) {
+                        Text(text = getString(R.string.cancel))
+                    }
+                }
+            }
+        )
+    }
+
+    private fun addWidget() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            getString(R.string.needs_android_o).toast()
+            return
+        }
+        val value = Sp.getValue(SpCst.KEY_SHOW_ADD_WIDGET_ALERT, true)
+        if (value) {
+            viewModel.showAddWidgetAlert.value = true
+        } else {
+            startActivity<WidgetsConfigActivity>()
+        }
+    }
+
+    @Composable
+    fun DepsView(onDismissRequest: () -> Unit = {}) {
+        val deps = arrayOf(
+            "Jetpack Compose",
+            "Google Material Design",
+            "Kotlin Coroutines",
+            "com.google.code.gson:gson",
+            "com.squareup.okhttp3:okhttp",
+            "com.squareup.retrofit2:retrofit",
+            "com.google.firebase:firebase",
+            "com.squareup.sqldelight:android-driver"
+        )
+        Dialog(onDismissRequest = onDismissRequest) {
+            Card {
+                Column(
+                    Modifier
+                        .padding(10.dp)
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    deps.forEach {
+                        Text(it)
+                    }
+                    Divider(
+                        Modifier
+                            .padding(top = 5.dp, bottom = 5.dp)
+                            .height(1.dp)
+                    )
+                    Text(string.license)
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun SettingsView(onDismissRequest: () -> Unit = {}) {
+        var crashReport by remember { mutableStateOf(Config.crashReport) }
+        var allowDarkMode by remember { mutableStateOf(Config.allowDarkMode) }
+
+        AlertDialog(onDismissRequest = onDismissRequest,
+            title = { Text(getString(R.string.settings)) },
+            text = {
+                Column(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = getString(R.string.crash_report))
+                        Switch(checked = crashReport, onCheckedChange = {
+                            Config.crashReport = it
+                            crashReport = it
+                        })
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = getString(R.string.turn_off_drak_mode))
+                        Switch(checked = allowDarkMode, onCheckedChange = {
+                            Config.allowDarkMode = it
+                            allowDarkMode = it
+                        })
+                    }
+                }
+            },
+            buttons = {})
+    }
+
+    @Composable
     private fun MainPageBottomBar(navController: NavController) {
         BottomNavigation {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -190,7 +324,12 @@ class MainActivity : AppCompatActivity() {
                             contentDescription = getString(screen.resourceId)
                         )
                     },
-                    label = { Text(getString(screen.resourceId)) },
+                    label = {
+                        Text(
+                            getString(screen.resourceId),
+                            color = themes.colors.buttonText
+                        )
+                    },
                     selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                     onClick = {
                         navController.navigate(screen.route) {
@@ -254,6 +393,28 @@ class MainActivity : AppCompatActivity() {
                     CharacterListView(characters.value)
                 }
             }
+
+            DefaultCard(
+                text = getString(R.string.miyoushe),
+                modifier = Modifier.padding(bottom = 10.dp)
+            ) {
+                Row {
+                    Button(onClick = {
+                        startWebViwActivity(
+                            getString(R.string.map), ApiCst.WEB_URL_MY_CHAR
+                        )
+                    }, modifier = Modifier.padding(end = 10.dp)) {
+                        Text(text = getString(R.string.my_char))
+                    }
+//                    Button(onClick = onClickMap, modifier = Modifier.padding(end = 10.dp)) {
+//                        Text(text = org.zky.genshinwidgets.utils.getString(R.string.map))
+//                    }
+//                    Button(onClick = onClickWiki, modifier = Modifier.padding(end = 10.dp)) {
+//                        Text(text = org.zky.genshinwidgets.utils.getString(R.string.wiki))
+//                    }
+                }
+            }
+
         }
     }
 
@@ -314,7 +475,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable
-    fun MainPage(model: MainViewModel) {
+    fun MainPage(model: MainViewModel, onClickLogin: () -> Unit) {
         val account = model.account.observeAsState()
         val signInfo = model.signInfo.observeAsState()
         val signReward = model.signReward.observeAsState()
@@ -322,6 +483,7 @@ class MainActivity : AppCompatActivity() {
         val showCookieInputDialog = remember { mutableStateOf(false) }
         val characters = model.characters.observeAsState()
         val activities = model.activities.observeAsState()
+        val dailyNote = model.dailyNote.observeAsState()
 
         Column(
             Modifier
@@ -337,7 +499,9 @@ class MainActivity : AppCompatActivity() {
                             .height(100.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = getString(R.string.login_plz))
+                        Button(onClick = onClickLogin) {
+                            Text(text = getString(R.string.login_plz))
+                        }
                     }
                 }
                 userRoleList?.isNotEmpty() != true -> {
@@ -362,14 +526,23 @@ class MainActivity : AppCompatActivity() {
                         onRequestSign = { viewModel.signMain(viewModel.currentUseRole.value) })
                 }
             }
-            if (activities.value?.isNotEmpty() == true) {
+            dailyNote.value?.let {
+                DefaultCard(
+                    text = getString(R.string.daily_note),
+                    modifier = Modifier.padding(bottom = 10.dp)
+                ) {
+                    DailyNoteView(it)
+                }
+            }
+            val tempList = characters.value?.filter {
+                activities.value?.find { it2 -> it.name == it2.title } != null
+            }
+            if (tempList?.isNotEmpty() == true) {
                 DefaultCard(
                     text = getString(R.string.foster_wives),
                     modifier = Modifier.padding(bottom = 10.dp)
                 ) {
-                    val tempList = characters.value?.filter {
-                        activities.value?.find { it2 -> it.name == it2.title } != null
-                    }
+
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         CharacterListView(tempList)
                     }
@@ -384,7 +557,6 @@ class MainActivity : AppCompatActivity() {
                         startWebViwActivity(
                             getString(R.string.today_material),
                             ApiCst.WEB_URL_TODAY_MATERIAL
-//                            "https://webstatic.mihoyo.com/app/community-game-records/index.html?bbs_presentation_style=fullscreen#/ys/role/all?role_id=165255180&server=cn_gf01&access=1"
                         )
                     },
                     onClickMap = {
@@ -433,7 +605,12 @@ class MainActivity : AppCompatActivity() {
     ) {
         val account = viewModel.account.observeAsState().value
         val role = viewModel.currentUseRole.observeAsState().value
-        Box(modifier = Modifier.fillMaxWidth().background(themes.colors.surface), contentAlignment = Alignment.BottomStart) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(themes.colors.surface),
+            contentAlignment = Alignment.BottomStart
+        ) {
             Image(
                 painter = painterResource(id = R.drawable.bg_drawer_keli),
                 contentDescription = "drawer",
@@ -527,23 +704,33 @@ class MainActivity : AppCompatActivity() {
         onDismissRequest: () -> Unit,
         onDelete: (String) -> Unit,
         onAddAccount: () -> Unit,
-        onAddAccountByCookie: () -> Unit
+        onAddAccountByCookie: () -> Unit,
+        onCopyCookie: (String) -> Unit
     ) {
         val accounts = viewModel.accounts.observeAsState().value
         Dialog(onDismissRequest = onDismissRequest) {
             Card(modifier = Modifier.fillMaxWidth()) {
-                Column {
+                Column(Modifier.padding(15.dp)) {
                     if (accounts?.isNotEmpty() == true) {
+                        Text(
+                            modifier = Modifier.padding(bottom = 5.dp),
+                            text = getString(R.string.accounts),
+                            fontSize = font.bodyL
+                        )
                         accounts.forEachIndexed { index, account ->
-                            AccountItemView(index, account, onDelete)
+                            AccountItemView(index, account, onDelete, onCopyCookie)
                         }
                     } else {
                         Text(text = getString(R.string.no_account))
                     }
+                    Text(
+                        modifier = Modifier.padding(top = 15.dp, bottom = 5.dp),
+                        text = getString(R.string.add_account),
+                        fontSize = font.bodyL
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
 
-                    Row {
-                        Text(text = getString(R.string.add_account))
-                        Button(onClick = onAddAccount) {
+                        Button(modifier = Modifier.padding(end = 5.dp), onClick = onAddAccount) {
                             Text(text = getString(R.string.web_login))
                         }
                         Button(onClick = onAddAccountByCookie) {
@@ -556,10 +743,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable
-    fun AccountItemView(index: Int, it: Account, onDelete: (String) -> Unit) {
+    fun AccountItemView(
+        index: Int,
+        it: Account,
+        onDelete: (String) -> Unit,
+        onCopyCookie: (String) -> Unit
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "$index ${it.getTypeName()}ID:${it.account_id}",
+                text = "${index + 1} ${it.getTypeName()}ID:${it.account_id}",
             )
             Image(
                 modifier = Modifier
@@ -568,6 +760,14 @@ class MainActivity : AppCompatActivity() {
                     .clickable(onClick = { onDelete(it.account_id) }),
                 painter = painterResource(id = R.drawable.ic_baseline_delete_outline_24_r),
                 contentDescription = "delete"
+            )
+            Image(
+                modifier = Modifier
+                    .padding(start = 5.dp)
+                    .size(15.dp)
+                    .clickable(onClick = { onCopyCookie(it.cookie) }),
+                painter = painterResource(id = R.drawable.ic_baseline_cookie_24_b),
+                contentDescription = "copy cookie"
             )
         }
     }
@@ -583,7 +783,7 @@ class MainActivity : AppCompatActivity() {
                         Text(text = getString(R.string.data_error))
                     }
                     info.value.first == 0 -> {
-                        Text(text = getString(R.string.sign_fail))
+                        Text(text = getString(R.string.sign_fail), color = themes.colors.error)
                     }
                     info.value.first == info.value.second -> {
                         Text(text = "${getString(R.string.sign_success)}(${info.value.first}/${info.value.second})")
@@ -599,7 +799,6 @@ class MainActivity : AppCompatActivity() {
 
     @Composable
     fun VersionDialog(onDismissRequest: () -> Unit) {
-        var crashReport by remember { mutableStateOf(Config.crashReport) }
         AlertDialog(onDismissRequest = onDismissRequest,
             title = { Text("${getString(R.string.app_name)} v${getAppVersionName()}") },
             text = {
@@ -620,19 +819,6 @@ class MainActivity : AppCompatActivity() {
                     Text(text = getString(R.string.permission_info_storage))
                     Text(text = getString(R.string.permission_info_wake_app))
                     Text(text = getString(R.string.permission_info_clipboard))
-
-                    Divider(
-                        Modifier
-                            .padding(top = 5.dp, bottom = 5.dp)
-                            .height(1.dp)
-
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = getString(R.string.crash_report))
-                        Switch(checked = crashReport, onCheckedChange = {
-                            crashReport = it
-                        })
-                    }
 
                     Divider(
                         Modifier
@@ -676,13 +862,15 @@ class MainActivity : AppCompatActivity() {
                     data = userRoleList,
                     defaultIndex = userRoleList.indexOf(userRole.value),
                     itemContentGetter = { i, it ->
+                        var textColor = themes.colors.buttonText
                         val text = if (i == -1) {
                             "${getString(R.string.hello_traveler)} ${it?.nickname ?: ""}"
                         } else {
+                            textColor = themes.colors.textPrimary
                             "${it?.nickname ?: ""}(${it?.region_name} Lv.${it?.level ?: "?"})"
                         }
                         Text(
-                            text = text, fontSize = 17.sp
+                            text = text, fontSize = 17.sp, color = textColor
                         )
                     },
                     onItemClick = { _, it ->

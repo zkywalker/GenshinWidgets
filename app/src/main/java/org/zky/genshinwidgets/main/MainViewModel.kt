@@ -21,6 +21,8 @@ import java.util.*
 
 class MainViewModel : ViewModel() {
 
+    val showAddWidgetAlert: MutableLiveData<Boolean> = MutableLiveData(false)
+
     val roleInfo: MutableLiveData<List<UserRole>> = MutableLiveData()
 
     val currentUseRole: MutableLiveData<UserRole> = MutableLiveData()
@@ -44,6 +46,8 @@ class MainViewModel : ViewModel() {
     val signResponse = MutableLiveData<Pair<Int, Int>>()
 
     val showSignResponse = MutableLiveData(false)
+
+    val dailyNote = MutableLiveData<DailyNote>()
 
     fun onPageStart() {
         val accounts = DatabaseStore.queries.selectAllAccounts().executeAsList()
@@ -79,6 +83,7 @@ class MainViewModel : ViewModel() {
                     currentUseRole.value = current
                     getSignInfo(current)
                     getCharacters(current)
+                    getDailyNote(current, acc)
                 }
             }
 
@@ -87,6 +92,14 @@ class MainViewModel : ViewModel() {
             delay(500)
             pageRequesting.value = false
         }
+    }
+
+    private suspend fun getDailyNote(current: UserRole, account: Account) {
+        dailyNote.value = Request.getGameRecord(
+            roleId = current.game_uid,
+            server = current.region,
+            cookie = account.cookie
+        )
     }
 
     suspend fun requestUserRole(accounts: List<Account>): List<UserRole> {
@@ -238,14 +251,20 @@ private fun List<GameActivity>.getTodayActivity(): List<GameActivity> {
     val currentTime = date.time / 1000
     val cal: Calendar = Calendar.getInstance()
     cal.time = date
-    val week = "${cal.get(Calendar.DAY_OF_WEEK)}"
+    var realWeek = cal.get(Calendar.DAY_OF_WEEK)
+    if (cal.firstDayOfWeek == Calendar.SUNDAY) {
+        realWeek -= 1
+        if (realWeek == 0) {
+            realWeek = 7
+        }
+    }
     return filter {
         val start = it.start_time.toLongOrNull() ?: 0
         val end = it.end_time.toLongOrNull() ?: 0
         if (start != 0L && end != 0L && (currentTime < start || currentTime > end)) {
             return@filter false
         }
-        if (it.drop_day.isNotEmpty() && !it.drop_day.contains(week)) {
+        if (it.drop_day.isNotEmpty() && !it.drop_day.contains("$realWeek")) {
             return@filter false
         }
         true

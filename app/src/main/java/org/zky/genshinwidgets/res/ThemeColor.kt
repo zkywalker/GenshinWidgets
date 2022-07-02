@@ -13,4 +13,5 @@ open class ThemeColor(
     val textTertiary: Color,
     val surface: Color,
     val onSurface: Color,
+    val buttonText: Color,
 )

@@ -8,6 +8,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import org.zky.genshinwidgets.widgets.Config
 
 object themes {
 
@@ -24,7 +25,7 @@ object themes {
         darkTheme: Boolean = isSystemInDarkTheme(),
         content: @Composable () -> Unit,
     ) {
-        val myColors = if (darkTheme) {
+        val myColors = if (darkTheme && Config.allowDarkMode) {
             color.night
         } else {
             color
@@ -54,7 +55,12 @@ object themes {
                         fontWeight = FontWeight.Normal,
                         fontSize = font.bodyL,
                         color = myColors.textPrimary
-                    )
+                    ),
+                    button = TextStyle(
+                        fontFamily = FontFamily.Default,
+                        fontWeight = FontWeight.Normal,
+                        color = myColors.buttonText
+                    ),
                 ),
                 content = content
             )

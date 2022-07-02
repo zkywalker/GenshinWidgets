@@ -32,6 +32,14 @@ object ApiCst {
     const val WEB_URL_GENSHIN_MAP =
         "https://webstatic.mihoyo.com/ys/app/interactive-map/index.html?bbs_presentation_style=no_header&lang=zh-cn&_markerFps=24#/map/2?shown_types=&center=1303.00,530.00&zoom=-2.00"
 
+    const val WEB_URL_OVERVIEW = "https://webstatic.mihoyo.com/app/community-game-records/index.html#/ys"
+
+    const val WEB_URL_MY_CHAR = "https://webstatic.mihoyo.com/app/community-game-records/index.html?bbs_presentation_style=fullscreen#/ys/role/all?role_id=165255180&server=cn_gf01&access=1"
+
+    const val WEB_URL_JOURNAL = "https://webstatic.mihoyo.com/ys/event/e20200709ysjournal/index.html?bbs_presentation_style=fullscreen&bbs_auth_required=true&mys_source=GameRecord#/"
+
+    const val WEB_URL_DAILY_NOTE = "https://webstatic.mihoyo.com/app/community-game-records/index.html?bbs_presentation_style=fullscreen#/ys/daily/?role_id=165255180&server=cn_gf01"
+
     const val GENSHIN_ACT_ID = "e202009291139501"
 
     const val GAME_BIZ_GENSHIN = "hk4e_cn"

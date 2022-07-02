@@ -73,19 +73,19 @@ fun Transformer.getMessage(): String {
     return recovery_time.run {
         val stringBuilder = StringBuilder()
         if (Day != 0) {
-            stringBuilder.append("$Day Day")
+            stringBuilder.append("$Day 天")
         }
         if (Hour != 0) {
             if (stringBuilder.isNotEmpty()) {
                 stringBuilder.append("/")
             }
-            stringBuilder.append("$Hour Hour")
+            stringBuilder.append("$Hour 小时")
         }
         if (Minute != 0) {
             if (stringBuilder.isNotEmpty()) {
                 stringBuilder.append("/")
             }
-            stringBuilder.append("$Minute Min")
+            stringBuilder.append("$Minute 分")
         }
         stringBuilder.toString()
     }

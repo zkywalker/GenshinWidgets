@@ -15,6 +15,7 @@ object color : ThemeColor(
     textTertiary = getColor(R.color.textTertiary),
     surface = getColor(R.color.surface),
     onSurface = getColor(R.color.onSurface),
+    buttonText = getColor(R.color.button),
 ) {
 
     val white_70 = Color(0xB3FFFFFF)
@@ -38,6 +39,7 @@ object color : ThemeColor(
         textTertiary = Color(0xFF8C9199),
         surface = Color(0xFF42474E),
         onSurface = Color(0xFFE2E2E5),
+        buttonText = Color(0xFFF1F0F4),
     )
 
 }

@@ -20,5 +20,6 @@
     <color name="textTertiary">#73777F</color>
     <color name="surface">#FFFFFF</color>
     <color name="onSurface">#1A1C1E</color>
+    <color name="button">#FFFFFF</color>
 
 </resources>

@@ -1,11 +1,14 @@
 package org.zky.genshinwidgets.widgets
 
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
@@ -14,6 +17,8 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -53,14 +58,13 @@ import org.zky.genshinwidgets.main.MainActivity
 import org.zky.genshinwidgets.model.WidgetsConfigModel
 import org.zky.genshinwidgets.network.Request
 import org.zky.genshinwidgets.res.color
+import org.zky.genshinwidgets.res.themes
 import org.zky.genshinwidgets.ui.*
 import org.zky.genshinwidgets.utils.*
-import org.zky.genshinwidgets.webview.WebLoginActivity
-import java.io.File
 import org.zky.genshinwidgets.utils.BitmapFillet.CORNER_ALL
-import org.zky.genshinwidgets.utils.getString
-import org.zky.genshinwidgets.utils.toast
+import java.io.File
 import java.io.FileOutputStream
+
 
 class WidgetsConfigActivity : AppCompatActivity() {
 
@@ -92,13 +96,12 @@ class WidgetsConfigActivity : AppCompatActivity() {
             )
         } ?: kotlin.run {
             viewModel.appWidgetId.value = AppWidgetManager.INVALID_APPWIDGET_ID
-            viewModel.isAddWidgetMode = false
+            viewModel.isAddWidgetModeFromHome = false
         }
         lifecycleScope.launch {
             viewModel.getUserRole()
         }
         setContent {
-
             MaterialTheme(colors = MaterialTheme.colors.copy(primary = color.primary)) {
                 RootView(
                     onConfirmClick = onConfirmClick,
@@ -107,6 +110,14 @@ class WidgetsConfigActivity : AppCompatActivity() {
                 ) {
                     finish()
                 }
+            }
+        }
+
+        PinBroadcastReceiver.onPinListener = onPinListener@{
+            val config = viewModel.widgetsConfigModel ?: return@onPinListener
+            if (it != -1) {
+                viewModel.appWidgetId.value = it
+                onConfirmClick(config)
             }
         }
     }
@@ -132,149 +143,151 @@ class WidgetsConfigActivity : AppCompatActivity() {
 
         val userRoleList = userRoles.value
         Log.i("kyle", "userRole:$userRole")
-        Scaffold(topBar = {
-            TopAppBar(
-                title = { Text(text = org.zky.genshinwidgets.utils.getString(R.string.config_widget)) },
-                navigationIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.ArrowBack,
-                        contentDescription = "back",
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .clickable(onClick = onBackClick)
-                    )
-                }
-            )
-        }) {
-            Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .fillMaxSize()
-                    .padding(15.dp)
-            ) {
-                if (userRole.value == null) {
-                    Button(onJumpToLoginClick) {
-                        Text(org.zky.genshinwidgets.utils.getString(R.string.login_plz))
-                    }
-                } else if (appWidgetId.value == AppWidgetManager.INVALID_APPWIDGET_ID) {
-                    Text(org.zky.genshinwidgets.utils.getString(R.string.did_not_add_widget))
-                } else {
-                    val role = userRole.value
-                    if (role != null) {
-                        when {
-                            pageRequesting.value == true -> {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(100.dp), contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator()
-                                }
-                            }
-                            userRoleList?.isNotEmpty() != true -> {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(100.dp), contentAlignment = Alignment.Center
-                                ) {
-                                    Text(text = getString(R.string.seems_you_donot_have_role))
-                                }
-                            }
-                            else -> {
-                                SpannerView(
-                                    modifier = Modifier.padding(bottom = 10.dp),
-                                    expanded = showSpannerDialog.value,
-                                    onVisibilityChange = { s -> showSpannerDialog.value = s },
-                                    data = userRoleList,
-                                    defaultIndex = userRoleList.indexOf(userRole.value),
-                                    itemContentGetter = { _, it ->
-                                        Text(
-                                            text = "${it?.nickname ?: ""}\n${it?.region_name} Lv.${it?.level ?: "?"} UID:${it?.game_uid ?: "?"}",
-                                            fontSize = 17.sp
-                                        )
-                                    },
-                                    onItemClick = { _, it ->
-                                        viewModel.currentUseRole.value = it
-                                    }
-                                )
-                            }
-                        }
-                    }
-                    DefaultCard(
-                        text = org.zky.genshinwidgets.utils.getString(R.string.widget_ui_config),
-                        modifier = Modifier.padding(bottom = 10.dp)
-                    ) {
-                        Column {
-                            Row {
-                                SwitchView(
-                                    text = org.zky.genshinwidgets.utils.getString(R.string.show_uid),
-                                    checked = showUID,
-                                    onCheckedChange = { showUID = it }
-                                )
-                                SwitchView(
-                                    text = org.zky.genshinwidgets.utils.getString(R.string.config_bg),
-                                    checked = showBgConfig,
-                                    onCheckedChange = {
-                                        showBgConfig = it
-                                        if (!showBgConfig) {
-                                            onValueChange(null, null, null)
-                                        }
-                                    })
-                            }
-                            if (showBgConfig) {
-                                PreviewConfigWidgetView(
-                                    image.value ?: "",
-                                    onInputChange = { viewModel.localPickImageFile.value = it },
-                                    historyImage = historyPickImage,
-                                    onSelectFileClick = {
-                                        startActivityForResult2(launcher) {
-                                            val intent = Intent(Intent.ACTION_GET_CONTENT)
-                                            intent.type = "image/*"
-                                            intent.addCategory(Intent.CATEGORY_OPENABLE)
-                                            intent
-                                        }
-                                    }
-                                ) { f, c, a ->
-                                    viewModel.widgetImageFile.value = f
-                                    viewModel.widgetImageCorner.value = c
-                                    viewModel.widgetImageAlpha.value = a
-                                }
-                            }
-                        }
-
-                    }
-                    DefaultCard(
-                        text = org.zky.genshinwidgets.utils.getString(R.string.click_widget_launch),
-                        modifier = Modifier.padding(bottom = 20.dp)
-                    ) {
-                        FlowRow {
-                            launchTargets.forEach {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    RadioButton(selected = target == it.first, onClick = {
-                                        target = it.first
-                                    })
-                                    Text(text = it.first)
-                                }
-                            }
-                        }
-                    }
-                    Button(onClick = {
-                        onConfirmClick(
-                            WidgetsConfigModel(
-                                launchTargets.find { it.first == target }!!.second,
-                                showUID
-                            )
+        themes.Theme {
+            Scaffold(topBar = {
+                TopAppBar(
+                    title = { Text(text = org.zky.genshinwidgets.utils.getString(R.string.config_widget)) },
+                    navigationIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "back",
+                            modifier = Modifier
+                                .padding(10.dp)
+                                .clickable(onClick = onBackClick)
                         )
-                    }) {
-                        Text(org.zky.genshinwidgets.utils.getString(R.string.save_config))
+                    }
+                )
+            }) {
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .fillMaxSize()
+                        .padding(15.dp)
+                ) {
+                    if (userRole.value == null) {
+                        Button(onJumpToLoginClick) {
+                            Text(org.zky.genshinwidgets.utils.getString(R.string.login_plz))
+                        }
+                    } else if (viewModel.isAddWidgetModeFromHome && appWidgetId.value == AppWidgetManager.INVALID_APPWIDGET_ID) {
+                        Text(org.zky.genshinwidgets.utils.getString(R.string.did_not_add_widget))
+                    } else {
+                        val role = userRole.value
+                        if (role != null) {
+                            when {
+                                pageRequesting.value == true -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(100.dp), contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator()
+                                    }
+                                }
+                                userRoleList?.isNotEmpty() != true -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(100.dp), contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(text = getString(R.string.seems_you_donot_have_role))
+                                    }
+                                }
+                                else -> {
+                                    SpannerView(
+                                        modifier = Modifier.padding(bottom = 10.dp),
+                                        expanded = showSpannerDialog.value,
+                                        onVisibilityChange = { s -> showSpannerDialog.value = s },
+                                        data = userRoleList,
+                                        defaultIndex = userRoleList.indexOf(userRole.value),
+                                        itemContentGetter = { _, it ->
+                                            Text(
+                                                text = "${it?.nickname ?: ""}\n${it?.region_name} Lv.${it?.level ?: "?"} UID:${it?.game_uid ?: "?"}",
+                                                fontSize = 17.sp
+                                            )
+                                        },
+                                        onItemClick = { _, it ->
+                                            viewModel.currentUseRole.value = it
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        DefaultCard(
+                            text = org.zky.genshinwidgets.utils.getString(R.string.widget_ui_config),
+                            modifier = Modifier.padding(bottom = 10.dp)
+                        ) {
+                            Column {
+                                Row {
+                                    SwitchView(
+                                        text = org.zky.genshinwidgets.utils.getString(R.string.show_uid),
+                                        checked = showUID,
+                                        onCheckedChange = { showUID = it }
+                                    )
+                                    SwitchView(
+                                        text = org.zky.genshinwidgets.utils.getString(R.string.config_bg),
+                                        checked = showBgConfig,
+                                        onCheckedChange = {
+                                            showBgConfig = it
+                                            if (!showBgConfig) {
+                                                onValueChange(null, null, null)
+                                            }
+                                        })
+                                }
+                                if (showBgConfig) {
+                                    PreviewConfigWidgetView(
+                                        image.value ?: "",
+                                        onInputChange = { viewModel.localPickImageFile.value = it },
+                                        historyImage = historyPickImage,
+                                        onSelectFileClick = {
+                                            startActivityForResult2(launcher) {
+                                                val intent = Intent(Intent.ACTION_GET_CONTENT)
+                                                intent.type = "image/*"
+                                                intent.addCategory(Intent.CATEGORY_OPENABLE)
+                                                intent
+                                            }
+                                        }
+                                    ) { f, c, a ->
+                                        viewModel.widgetImageFile.value = f
+                                        viewModel.widgetImageCorner.value = c
+                                        viewModel.widgetImageAlpha.value = a
+                                    }
+                                }
+                            }
+
+                        }
+                        DefaultCard(
+                            text = org.zky.genshinwidgets.utils.getString(R.string.click_widget_launch),
+                            modifier = Modifier.padding(bottom = 20.dp)
+                        ) {
+                            FlowRow {
+                                launchTargets.forEach {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        RadioButton(selected = target == it.first, onClick = {
+                                            target = it.first
+                                        })
+                                        Text(text = it.first)
+                                    }
+                                }
+                            }
+                        }
+                        Button(onClick = {
+                            onConfirmClick(
+                                WidgetsConfigModel(
+                                    launchTargets.find { it.first == target }!!.second,
+                                    showUID
+                                )
+                            )
+                        }) {
+                            Text(org.zky.genshinwidgets.utils.getString(R.string.save_config))
+                        }
                     }
                 }
             }
-        }
 
-        if (pageLoading.value == true) {
-            LoadingView {
-                viewModel.pageLoading.value = false
+            if (pageLoading.value == true) {
+                LoadingView {
+                    viewModel.pageLoading.value = false
+                }
             }
         }
     }
@@ -292,8 +305,28 @@ class WidgetsConfigActivity : AppCompatActivity() {
         finish()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun tryToPinWidget() {
+        val appWidgetManager: AppWidgetManager = getSystemService(AppWidgetManager::class.java)
+        val myProvider = ComponentName(this, GlanceReceiver::class.java)
+        if (appWidgetManager.isRequestPinAppWidgetSupported) {
+            appWidgetManager.requestPinAppWidget(
+                myProvider,
+                null,
+                PinBroadcastReceiver.obtainPendingIntent(this)
+            )
+        }
+    }
+
     private val onConfirmClick: (WidgetsConfigModel) -> Unit = {
         lifecycleScope.launch {
+            if (!viewModel.isAddWidgetModeFromHome && viewModel.appWidgetId.value == AppWidgetManager.INVALID_APPWIDGET_ID) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    viewModel.widgetsConfigModel = it
+                    tryToPinWidget()
+                }
+                return@launch
+            }
             viewModel.pageLoading.value = true
             Config.launchTarget = it.targetLaunchApp
             Config.showUID = it.showUID

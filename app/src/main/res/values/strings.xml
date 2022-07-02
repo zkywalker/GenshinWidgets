@@ -99,5 +99,14 @@
     <string name="no_account">还没有登录的账号</string>
     <string name="cookie_login">使用cookie</string>
     <string name="web_login">使用网页</string>
-    <string name="add_account">添加账号</string>
+    <string name="add_account">添加账号:</string>
+    <string name="accounts">已登录账号:</string>
+    <string name="needs_android_o">系统低于Android O，请自行桌面添加微件</string>
+    <string name="add_widget_alert">不稳定功能</string>
+    <string name="add_widget_alert_text">大多数国产机型桌面屏蔽了该系统API，如无法生效请自行桌面添加微件</string>
+    <string name="add_widget_alert_button">确认,不再提示</string>
+    <string name="deps_title">使用的开源代码</string>
+    <string name="my_char">我的角色</string>
+    <string name="daily_note">便签</string>
+    <string name="turn_off_drak_mode">主题跟随系统</string>
 </resources>

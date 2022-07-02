@@ -8,12 +8,15 @@ import androidx.lifecycle.ViewModel
 import org.zky.genshinwidgets.cst.SpCst
 import org.zky.genshinwidgets.database.DatabaseStore
 import org.zky.genshinwidgets.model.UserRole
+import org.zky.genshinwidgets.model.WidgetsConfigModel
 import org.zky.genshinwidgets.model.convertToUserRoles
 import org.zky.genshinwidgets.utils.*
 import java.io.File
 
 
 class WidgetsConfigViewModel : ViewModel() {
+
+    var widgetsConfigModel: WidgetsConfigModel? = null
 
     val localPickImageFile: MutableLiveData<String> = MutableLiveData()
 
@@ -32,7 +35,7 @@ class WidgetsConfigViewModel : ViewModel() {
 
     val widgetImageFile = MutableLiveData<File>()
 
-    var isAddWidgetMode = true
+    var isAddWidgetModeFromHome = true
 
     val appWidgetId = MutableLiveData(AppWidgetManager.INVALID_APPWIDGET_ID)
 

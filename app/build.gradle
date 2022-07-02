@@ -13,9 +13,9 @@ android {
     defaultConfig {
         applicationId "org.zky.genshinwidgets"
         minSdk 24
-        targetSdk 31
-        versionCode 3
-        versionName "0.0.3"
+        targetSdk 30
+        versionCode 4
+        versionName "0.1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -55,6 +55,24 @@ android {
         kotlinCompilerExtensionVersion = "1.1.1"
     }
 
+    android.applicationVariants.all { variant ->
+        variant.outputs.all {
+            if (buildType == 'release') {
+                updateVersionJson(defaultConfig.versionCode, defaultConfig.versionName)
+            }
+            outputFileName = "genshinWidgets_" + buildType.name + "_" + defaultConfig.versionCode + "_v" + defaultConfig.versionName + ".apk"
+        }
+    }
+
+}
+
+def updateVersionJson(versionCode, versionName) {
+    File json = new File(rootDir.getAbsoluteFile(), "version.json")
+    if (json.exists()) {
+        json.delete()
+    }
+    json.createNewFile()
+    json.write("{\"versionCode\":" + versionCode + ",\"versionName\":\"" + versionName + "\"}")
 }
 
 //sqldelight {

@@ -25,7 +25,7 @@ import org.zky.genshinwidgets.utils.fromJsonOrNull
 
 class GenshinDailyNoteWidget : GlanceAppWidget() {
 
-    override val sizeMode = SizeMode.Single
+    override val sizeMode = SizeMode.Exact
 
     override var stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
@@ -42,12 +42,14 @@ class GenshinDailyNoteWidget : GlanceAppWidget() {
 //            }
 //            return
 //        }
-        val dailyNote = preferencesState[stringPreferencesKey(PRE_DATA_DAILY_NOTE)] ?: ""
-        val userRole = preferencesState[stringPreferencesKey(PRE_DATA_ROLE_INFO)] ?: ""
-        val image = preferencesState[stringPreferencesKey(PRE_DATA_BG_IMAGE)] ?: ""
+        preferencesState.runCatching {
+            val dailyNote = preferencesState[stringPreferencesKey(PRE_DATA_DAILY_NOTE)] ?: ""
+            val userRole = preferencesState[stringPreferencesKey(PRE_DATA_ROLE_INFO)] ?: ""
+            val image = preferencesState[stringPreferencesKey(PRE_DATA_BG_IMAGE)] ?: ""
 
-        Log.i("kyle", "dailyNote = $dailyNote, userRole = $userRole")
-        WidgetMain(dailyNote.fromJsonOrNull(), userRole.fromJsonOrNull(), image)
+            Log.i("kyle", "dailyNote = $dailyNote, userRole = $userRole")
+            WidgetMain(dailyNote.fromJsonOrNull(), userRole.fromJsonOrNull(), image)
+        }
     }
 
 

@@ -61,6 +61,23 @@ class GlanceReceiver : GlanceAppWidgetReceiver() {
         }
     }
 
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        scope.launch {
+            for (id in appWidgetIds) {
+                GlanceCallbackAction(false).onRun(
+                    application,
+                    GlanceIdUtils.getGlanceId(id),
+                    actionParametersOf()
+                )
+            }
+        }
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+    }
+
     companion object {
 
         val ACTION_REFRESH_WIDGET_ALARM: String =
