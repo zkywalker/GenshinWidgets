@@ -1,0 +1,65 @@
+
+CREATE TABLE IF NOT EXISTS Account (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id TEXT NOT NULL,
+    cookie TEXT NOT NULL DEFAULT '',
+    cookie_updated_at INTEGER DEFAULT 0,
+    nick_name TEXT,
+    type TEXT
+);
+
+CREATE TABLE IF NOT EXISTS  GameRole (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id TEXT NOT NULL,
+    game_uid TEXT NOT NULL,
+    game_biz TEXT NOT NULL,
+    region TEXT NOT NULL,
+    region_name TEXT NOT NULL,
+    nickname TEXT NOT NULL,
+    level INTEGER DEFAULT 0,
+    is_chosen INTEGER AS Boolean DEFAULT 0,
+    is_official INTEGER AS Boolean  DEFAULT 0,
+    sign_date INTEGER DEFAULT 0,
+    FOREIGN KEY(account_id) REFERENCES Account(id)
+);
+
+selectAccount:
+SELECT *
+FROM Account
+WHERE account_id = :id;
+
+selectAllAccounts:
+SELECT *
+FROM Account;
+
+updateCookie:
+UPDATE Account SET cookie = :cookie, cookie_updated_at = :cookie_updated_at WHERE account_id = :id;
+
+selectRole:
+SELECT *
+FROM GameRole
+WHERE game_uid = :gameUid;
+
+selectAllRoles:
+SELECT *
+FROM GameRole;
+
+insertAccount:
+INSERT INTO Account (account_id, cookie, cookie_updated_at, nick_name, type)
+VALUES (?,?, ?, ?, ?);
+
+insertGameRole:
+INSERT INTO GameRole (account_id, game_uid, game_biz, region, region_name, nickname, level, is_chosen, is_official)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateGameRole:
+UPDATE GameRole
+SET nickname = :nickname, level = :level, is_chosen = :is_chosen, is_official = :is_official WHERE game_uid = :gameUid;
+
+deleteAccount:
+DELETE FROM Account WHERE account_id = :account_id;
+
+updateSignDate:
+UPDATE GameRole
+SET sign_date = :sign_date
+WHERE game_uid = :gameUid;

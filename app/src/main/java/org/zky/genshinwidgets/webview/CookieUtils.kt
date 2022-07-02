@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.zky.genshinwidgets.R
+import org.zky.genshinwidgets.database.DatabaseStore
 import org.zky.genshinwidgets.network.Request
 import java.util.*
 
@@ -100,5 +101,25 @@ private fun getCookieNamesByUrl(cookie: String): Vector<String>? {
     return if (allCookieField.isEmpty()) {
         null
     } else allCookieField
+}
+
+fun insertAccountByCookie(cookie: String) {
+    val id = parseCookie(cookie)["account_id"] ?: return
+    if (!TextUtils.isEmpty(id)) {
+        val acc = DatabaseStore.queries.selectAccount(id).executeAsOneOrNull()
+        if (acc == null) {
+            DatabaseStore.queries.insertAccount(
+                account_id = id,
+                cookie = cookie,
+                cookie_updated_at = Date().time,
+                nick_name = "",
+                type = "miyoushe"
+            )
+            return
+        }
+        if (acc.cookie != cookie) {
+            DatabaseStore.queries.updateCookie(cookie, Date().time, id)
+        }
+    }
 }
 

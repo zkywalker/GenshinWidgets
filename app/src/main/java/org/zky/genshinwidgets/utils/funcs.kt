@@ -14,6 +14,7 @@ import android.util.Log
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
+import androidx.compose.ui.graphics.Color
 import com.google.gson.Gson
 import org.zky.genshinwidgets.cst.SpCst
 import org.zky.genshinwidgets.webview.WebViewActivity
@@ -27,9 +28,9 @@ val handlerThread = HandlerThread("handlerThread").apply {
 
 val workerHandler = Handler(handlerThread.looper)
 
-
 var spCookie: String by PreferenceDelegate(SpCst.KEY_COOKIE, "")
 
+@Deprecated("use database now")
 var loginCookie: String
     get() = if (checkToken(spCookie)) spCookie else ""
     set(value) {
@@ -58,13 +59,8 @@ fun Int.toast() {
 
 fun getString(stringRes: Int): String = application.getString(stringRes)
 
-fun dp2px(dp: Int): Int {
-    val wm = application.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    val display = wm.defaultDisplay
-    val displaymetrics = DisplayMetrics()
-    display.getMetrics(displaymetrics)
-    return (dp * displaymetrics.density + 0.5f).toInt()
-}
+fun getColor(stringRes: Int): Color = Color(application.getColor(stringRes))
+
 
 fun safeRun(runnable: () -> Unit) {
     try {

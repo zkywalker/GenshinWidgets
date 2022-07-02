@@ -13,10 +13,7 @@ import org.zky.genshinwidgets.cst.ApiCst
 import org.zky.genshinwidgets.model.*
 import org.zky.genshinwidgets.utils.*
 import org.zky.genshinwidgets.widgets.format
-import org.zky.genshinwidgets.widgets.signDate
-import retrofit2.Call
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
@@ -49,35 +46,49 @@ object Request {
         .build().create(GenshinApiService::class.java)
 
 
-    suspend fun getUserRole(cookie: String? = null): GetUserRole? =
+    suspend fun getUserRole(cookie: String): GetUserRole? =
         requestTry { api.getUserRole(cookie).handleResponse() }
 
-    suspend fun getSignReward(cookie: String? = null): SignReward? =
+    suspend fun getSignReward(cookie: String): SignReward? =
         requestTry { api.getSignReward(cookie).handleResponse() }
 
-    suspend fun getSignInfo(region: String, uid: String, cookie: String? = null): SignInfo? =
+    suspend fun getSignInfo(region: String, uid: String, cookie: String): SignInfo? =
         requestTry { api.getSignInfo(region = region, uid = uid, cookie = cookie).handleResponse() }
 
-    suspend fun sign(uid: String, region: String, cookie: String? = null): HashMap<String, Any>? {
+    suspend fun sign(uid: String, region: String, cookie: String): HashMap<String, Any>? {
         val body = SignRequest(
             uid = uid, region = region,
         ).toJson().toRequestBody("application/json".toMediaTypeOrNull())
         return requestTry {
             api.sign(body, cookie = cookie).handleResponse {
                 if (it == -5003) {
-                    signDate = format.format(Date())
+                    // todo 入库
+//                    signDate = format.format(Date())
                 }
                 false
             }
         }
     }
 
-    suspend fun getGameRecord(roleId: String, server: String, cookie: String? = null): DailyNote? =
+    suspend fun getGameRecord(roleId: String, server: String, cookie: String): DailyNote? =
         requestTry {
             recordApi.getGameRecord(roleId = roleId, server = server, cookie = cookie)
                 .handleResponse()
         }
 
+    // getCharacter
+    suspend fun getCharacter(
+        role_id: String,
+        server: String,
+        cookie: String
+    ): GetCharacter? {
+        val body = getCharacterRequest(role_id = role_id, server = server)
+            .toJson().toRequestBody("application/json".toMediaTypeOrNull())
+        return requestTry { recordApi.getCharacter(body, cookie = cookie).handleResponse() }
+    }
+
+    suspend fun getGameActivity(): GetGameActivity? =
+        requestTry { api.getGameActivity().handleResponse() }
 
     suspend fun <T> requestTry(block: suspend () -> T): T? = try {
         block()

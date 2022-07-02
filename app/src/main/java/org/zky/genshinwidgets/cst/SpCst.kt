@@ -3,11 +3,15 @@ package org.zky.genshinwidgets.cst
 
 object SpCst {
 
+    val KEY_ALLOW_DARK_MODE = "allow_dark_mode"
+
+    val KEY_SHOW_ADD_WIDGET_ALERT = "show_add_widget_alert"
+
     val KEY_HISTORY_PICK_IMAGES = "key_history_pick_images"
 
     val KEY_IMAGE_BG: String = "key_image_bg"
 
-    val KEY_SHOW_UID: String= "key_show_uid"
+    val KEY_SHOW_UID: String = "key_show_uid"
 
     val KEY_CRASH_REPORT: String = "key_crash_report"
 
@@ -20,6 +24,9 @@ object SpCst {
     const val KEY_COOKIE: String = "key_cookie"
 
     const val KEY_ROLE_INFO: String = "key_role_info"
+
+    // main account
+    const val KEY_SELECT_ACCOUNT: String = "key_select_account"
 
     const val DEFAULT_SP_NAME: String = "default_sp_name"
 

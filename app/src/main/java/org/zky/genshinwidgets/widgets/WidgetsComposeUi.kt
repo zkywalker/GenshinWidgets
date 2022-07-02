@@ -34,9 +34,13 @@ val normalTextStyle = TextStyle(color = ColorProvider(Color.White), fontSize = 1
 
 val finishTextStyle = TextStyle(color = ColorProvider(color.explored), fontSize = 13.sp)
 
-var signDate: String by PreferenceDelegate(SpCst.KEY_SIGN_DATE, "")
+//var signDate: String by PreferenceDelegate(SpCst.KEY_SIGN_DATE, "")
 
 val format = SimpleDateFormat("yyyy-MM-dd", Locale.CHINA)
+
+fun Date?.isSameDate(): Boolean {
+    return this != null && format.format(this) == Date().format()
+}
 
 @Composable
 fun WidgetMain(model: DailyNote?, role: UserRole? = null, image: String?) {
@@ -93,36 +97,40 @@ fun WidgetMain(model: DailyNote?, role: UserRole? = null, image: String?) {
                 }
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Image(
-                        ImageProvider(R.drawable.ic_baseline_refresh_24),
-                        contentDescription = "refresh",
-                        modifier = GlanceModifier
-                            .size(20.dp)
-                            .clickable(onClick = action)
-                    )
-                    // todo its not stable, cuz it will refresh when recompose
-                    Text(
-                        text = "${Date().format()}",
-                        style = TextStyle(
-                            color = ColorProvider(Color.White),
-                            fontSize = 10.sp
-                        ),
-                        modifier = GlanceModifier.padding(bottom = 5.dp)
-                    )
-
-                    val imageRes =
-                        if (!TextUtils.isEmpty(signDate) && signDate == format.format(Date())) {
-                            R.drawable.ic_baseline_assignment_turned_in_24_green
-                        } else {
-                            R.drawable.ic_baseline_assignment_turned_in_24
-                        }
-                    Image(
-                        ImageProvider(imageRes),
-                        contentDescription = "sign",
-                        modifier = GlanceModifier
-                            .size(20.dp)
-                            .clickable(onClick = actionSign)
-                    )
+                    Column(
+                        modifier = GlanceModifier.clickable(onClick = action),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Image(
+                            ImageProvider(R.drawable.ic_baseline_refresh_24),
+                            contentDescription = "refresh",
+                            modifier = GlanceModifier
+                                .size(20.dp)
+                        )
+                        // todo its not stable, cuz it will refresh when recompose
+                        Text(
+                            text = "${Date().format()}",
+                            style = TextStyle(
+                                color = ColorProvider(Color.White),
+                                fontSize = 10.sp
+                            ),
+                            modifier = GlanceModifier.padding(bottom = 5.dp)
+                        )
+                    }
+//
+//                    val imageRes =
+//                        if (!TextUtils.isEmpty(signDate) && signDate == format.format(Date())) {
+//                            R.drawable.ic_baseline_assignment_turned_in_24_green
+//                        } else {
+//                            R.drawable.ic_baseline_assignment_turned_in_24
+//                        }
+//                    Image(
+//                        ImageProvider(imageRes),
+//                        contentDescription = "sign",
+//                        modifier = GlanceModifier
+//                            .size(20.dp)
+//                            .clickable(onClick = actionSign)
+//                    )
                 }
 
                 Column(modifier = GlanceModifier.fillMaxSize()) {

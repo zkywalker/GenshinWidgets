@@ -15,7 +15,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.zky.genshinwidgets.utils.application
-import org.zky.genshinwidgets.utils.loginCookie
 
 
 class GlanceReceiver : GlanceAppWidgetReceiver() {
@@ -25,11 +24,13 @@ class GlanceReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = GenshinDailyNoteWidget()
 
     override fun onReceive(context: Context, intent: Intent) {
+        Log.i("onReceive", "onReceive: ${intent.extras?.get("test")}")
+
         when (intent.action) {
             ACTION_REFRESH_WIDGET_ALARM -> {
                 Log.d("GlanceReceiver", "onReceive: update widget alarm")
                 refresh()
-                startRefreshAlarm(application, Config.autoRefreshMs)
+//                startRefreshAlarm(application, Config.autoRefreshMs)
             }
             else -> {
                 super.onReceive(context, intent)
@@ -42,12 +43,17 @@ class GlanceReceiver : GlanceAppWidgetReceiver() {
         Log.i("kyle", "onDeleted: $appWidgetIds")
     }
 
+    override fun onEnabled(context: Context?) {
+        super.onEnabled(context)
+        Log.i("onReceive", "onEnabled: ")
+    }
+
     private fun refresh() {
         scope.launch {
             val ids = GlanceAppWidgetManager(application).getGlanceIds(
                 GenshinDailyNoteWidget::class.java
             )
-            if (ids.isEmpty()){
+            if (ids.isEmpty()) {
                 return@launch
             }
             val curId = ids.last()
@@ -55,9 +61,26 @@ class GlanceReceiver : GlanceAppWidgetReceiver() {
         }
     }
 
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        scope.launch {
+            for (id in appWidgetIds) {
+                GlanceCallbackAction(false).onRun(
+                    application,
+                    GlanceIdUtils.getGlanceId(id),
+                    actionParametersOf()
+                )
+            }
+        }
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+    }
+
     companion object {
 
-        private val ACTION_REFRESH_WIDGET_ALARM: String =
+        val ACTION_REFRESH_WIDGET_ALARM: String =
             "org.zky.genshinwidgets.action.REFRESH_WIDGET"
 
         fun startRefreshAlarm(context: Context, autoRefreshMs: Long) {
@@ -66,7 +89,12 @@ class GlanceReceiver : GlanceAppWidgetReceiver() {
             val sender =
                 PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
             val alarm = application.getSystemService(ALARM_SERVICE) as AlarmManager?
-            alarm?.setExact(AlarmManager.RTC_WAKEUP, autoRefreshMs, sender)
+            alarm?.setInexactRepeating(
+                AlarmManager.RTC_WAKEUP,
+                autoRefreshMs,
+                autoRefreshMs,
+                sender
+            )
         }
 
     }

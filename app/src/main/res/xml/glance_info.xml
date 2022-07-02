@@ -3,6 +3,10 @@
     android:configure="org.zky.genshinwidgets.widgets.WidgetsConfigActivity"
     android:initialLayout="@layout/appwidget_initial_layout"
     android:minHeight="90dp"
-    android:minWidth="150dp"
+    android:minWidth="90dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:minResizeWidth="90dp"
+    android:updatePeriodMillis="3600000"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen" />

@@ -11,4 +11,8 @@ public class GlanceIdUtils {
         }
         return -1;
     }
+
+    static GlanceId getGlanceId(int id) {
+        return new AppWidgetId(id);
+    }
 }

@@ -8,24 +8,24 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.glance.GlanceModifier
-import androidx.glance.LocalGlanceId
+import androidx.glance.*
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
-import androidx.glance.currentState
-import androidx.glance.layout.Column
-import androidx.glance.layout.size
+import androidx.glance.appwidget.appWidgetBackground
+import androidx.glance.layout.*
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.Text
+import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.model.DailyNote
+import org.zky.genshinwidgets.utils.fileToBitmap
 import org.zky.genshinwidgets.utils.fromJson
 import org.zky.genshinwidgets.utils.fromJsonOrNull
 
 class GenshinDailyNoteWidget : GlanceAppWidget() {
 
-    override val sizeMode = SizeMode.Single
+    override val sizeMode = SizeMode.Exact
 
     override var stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
@@ -42,12 +42,14 @@ class GenshinDailyNoteWidget : GlanceAppWidget() {
 //            }
 //            return
 //        }
-        val dailyNote = preferencesState[stringPreferencesKey(PRE_DATA_DAILY_NOTE)] ?: ""
-        val userRole = preferencesState[stringPreferencesKey(PRE_DATA_ROLE_INFO)] ?: ""
-        val image = preferencesState[stringPreferencesKey(PRE_DATA_BG_IMAGE)] ?: ""
+        preferencesState.runCatching {
+            val dailyNote = preferencesState[stringPreferencesKey(PRE_DATA_DAILY_NOTE)] ?: ""
+            val userRole = preferencesState[stringPreferencesKey(PRE_DATA_ROLE_INFO)] ?: ""
+            val image = preferencesState[stringPreferencesKey(PRE_DATA_BG_IMAGE)] ?: ""
 
-        Log.i("kyle", "dailyNote = $dailyNote, userRole = $userRole")
-        WidgetMain(dailyNote.fromJsonOrNull(), userRole.fromJsonOrNull(), image)
+            Log.i("kyle", "dailyNote = $dailyNote, userRole = $userRole")
+            WidgetMain(dailyNote.fromJsonOrNull(), userRole.fromJsonOrNull(), image)
+        }
     }
 
 

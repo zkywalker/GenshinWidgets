@@ -9,4 +9,17 @@
     <color name="white">#FFFFFFFF</color>
     <color name="white_a55">#55FFFFFF</color>
 
+    <color name="primary">#FF30A4FC</color>
+    <color name="primaryVariant">#FF00629F</color>
+    <color name="secondary">#FF4E6074</color>
+    <color name="tertiary">#FF6C5580</color>
+    <color name="error">#FFBA1A1A</color>
+    <color name="background">#ffffff</color>
+    <color name="textPrimary">#1A1C1E</color>
+    <color name="textSecondary">#42474E</color>
+    <color name="textTertiary">#73777F</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="onSurface">#1A1C1E</color>
+    <color name="button">#FFFFFF</color>
+
 </resources>

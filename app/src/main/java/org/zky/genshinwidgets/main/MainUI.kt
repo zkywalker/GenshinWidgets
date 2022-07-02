@@ -15,16 +15,15 @@ import com.google.accompanist.flowlayout.FlowRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.AlertDialog
-import androidx.compose.material.Card
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import org.zky.genshinwidgets.R
-import org.zky.genshinwidgets.model.SignInfo
-import org.zky.genshinwidgets.model.SignReward
-import org.zky.genshinwidgets.model.UserRole
+import org.zky.genshinwidgets.model.*
+import org.zky.genshinwidgets.res.color
 import org.zky.genshinwidgets.res.font
 import org.zky.genshinwidgets.utils.getString
 
@@ -59,9 +58,8 @@ fun UserRoleView(
 fun CookieView(
     cookie: String?,
     onLaunchToCookiePage: () -> Unit,
-    onInputCookie:() -> Unit,
+    onInputCookie: () -> Unit,
     copyToClipboard: (String) -> Unit,
-    clearCookie: () -> Unit,
 ) {
     var showCookie by remember { mutableStateOf(false) }
 
@@ -111,11 +109,6 @@ fun CookieView(
                     modifier = Modifier.padding(end = 10.dp),
                     onClick = { copyToClipboard(cookie) }) {
                     Text(text = getString(R.string.copy_cookie))
-                }
-                Button(
-                    modifier = Modifier.padding(end = 10.dp),
-                    onClick = { clearCookie() }) {
-                    Text(text = getString(R.string.clear_cookie))
                 }
             }
         }
@@ -173,7 +166,7 @@ fun SignView(
                         .padding(5.dp),
                     contentDescription = rewardItem.name
                 )
-                Text(text = "${rewardItem.name} x ${rewardItem.cnt}")
+                Text(text = "${rewardItem.name} x${rewardItem.cnt}")
             }
             if (!signInfo.is_sign) {
                 Button(onClick = onRequestSign, modifier = Modifier.padding(start = 10.dp)) {
@@ -226,13 +219,13 @@ fun SignRewardsView(signInfo: SignInfo, signReward: SignReward?) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = "Day ${index + 1}", fontSize = font.bodySize)
+                        Text(text = "Day ${index + 1}", fontSize = font.bodyM)
                         Image(
                             painter = rememberImagePainter(data = rewardItem.icon),
                             modifier = Modifier.size(24.dp),
                             contentDescription = rewardItem.name
                         )
-                        Text(text = "x ${rewardItem.cnt}", fontSize = font.bodySize)
+                        Text(text = "x ${rewardItem.cnt}", fontSize = font.bodyM)
                     }
                     if (signInfo.total_sign_day >= index + 1) {
                         Image(
@@ -311,6 +304,95 @@ fun JumpAppView(
         }
         Button(onClick = onClickBBS, modifier = Modifier.padding(end = 10.dp)) {
             Text(text = getString(R.string.miyoushe))
+        }
+    }
+}
+
+
+@Composable
+fun CharacterListView(value: List<GameCharacter>?) {
+    value ?: return
+    FlowRow(mainAxisSpacing = 4.dp, crossAxisSpacing = 4.dp) {
+        value.forEach {
+            Box(Modifier.size(56.dp, 68.dp)) {
+                var ic_star = R.drawable.icon_character_5_star
+                var bg_star = R.drawable.bg_character_5_star
+                when (it.rarity) {
+                    4 -> {
+                        ic_star = R.drawable.icon_character_4_star
+                        bg_star = R.drawable.bg_character_4_star
+                    }
+                    5 -> {
+                        ic_star = R.drawable.icon_character_5_star
+                        bg_star = R.drawable.bg_character_5_star
+                    }
+                    else -> {
+                        bg_star = R.drawable.bg_character_105_star
+                    }
+                }
+                Image(
+                    modifier = Modifier.fillMaxSize(),
+                    painter = painterResource(id = bg_star),
+                    contentDescription = "bg"
+                )
+
+                Box(contentAlignment = Alignment.BottomEnd) {
+                    Image(
+                        modifier = Modifier.fillMaxWidth(),
+                        painter = rememberImagePainter(data = it.icon),
+                        contentDescription = it.name
+                    )
+                    Image(
+                        painter = painterResource(id = R.drawable.icon_character_lb),
+                        contentDescription = null
+                    )
+                }
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    val element = Element.getElementByName(it.element)
+                    if (element != null) {
+                        Image(
+                            modifier = Modifier
+                                .size(16.dp, 16.dp)
+                                .padding(1.dp),
+                            painter = painterResource(id = element.icon),
+                            contentDescription = element.name
+                        )
+                    }
+                    if (it.actived_constellation_num != 0) {
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            modifier = Modifier
+                                .padding(top = 2.dp, end = 3.dp)
+                                .background(
+                                    color = color.black44,
+                                    shape = RoundedCornerShape(2.dp)
+                                )
+                                .padding(start = 2.dp, end = 2.dp),
+                            text = "${it.actived_constellation_num}",
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        )
+                    }
+                }
+
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(Modifier.weight(1f))
+                    Image(
+                        modifier = Modifier.height(11.dp),
+                        painter = painterResource(id = ic_star),
+                        contentDescription = "ic"
+                    )
+                    Text(
+                        modifier = Modifier.offset(y = (-1).dp),
+                        text = "Lv.${it.level}",
+                        fontSize = 8.sp
+                    )
+                }
+            }
         }
     }
 }

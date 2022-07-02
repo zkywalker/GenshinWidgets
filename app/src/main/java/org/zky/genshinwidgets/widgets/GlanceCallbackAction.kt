@@ -56,7 +56,7 @@ class GlanceCallbackAction(
             if (parameters[GenshinDailyNoteWidget.ACTION_PARAMETERS_KEY] == ACTION_REQUEST_SIGN) {
                 val sign = Request.sign(roleInfo.game_uid, roleInfo.region, cookie)
                 if (sign?.get("code") == "ok") {
-                    signDate = format.format(Date())
+//                    signDate = format.format(Date())
                     R.string.sign_success.toast()
                 }
             }
