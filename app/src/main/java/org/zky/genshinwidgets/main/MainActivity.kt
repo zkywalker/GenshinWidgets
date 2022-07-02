@@ -298,14 +298,13 @@ class MainActivity : AppCompatActivity() {
                             crashReport = it
                         })
                     }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = getString(R.string.turn_off_drak_mode))
-                        Switch(checked = allowDarkMode, onCheckedChange = {
-                            Config.allowDarkMode = it
-                            allowDarkMode = it
-                        })
-                    }
+//                    Row(verticalAlignment = Alignment.CenterVertically) {
+//                        Text(text = getString(R.string.turn_off_drak_mode))
+//                        Switch(checked = allowDarkMode, onCheckedChange = {
+//                            Config.allowDarkMode = it
+//                            allowDarkMode = it
+//                        })
+//                    }
                 }
             },
             buttons = {})
@@ -783,13 +782,13 @@ class MainActivity : AppCompatActivity() {
                         Text(text = getString(R.string.data_error))
                     }
                     info.value.first == 0 -> {
-                        Text(text = getString(R.string.sign_fail), color = themes.colors.error)
+                        Text(text = "${getString(R.string.sign_fail)} ${info.value.first}/${info.value.second}", color = themes.colors.error)
                     }
                     info.value.first == info.value.second -> {
-                        Text(text = "${getString(R.string.sign_success)}(${info.value.first}/${info.value.second})")
+                        Text(text = "${getString(R.string.sign_success)} ${info.value.first}/${info.value.second}")
                     }
                     else -> {
-                        Text(text = "${getString(R.string.sign_end)}(${info.value.first}/${info.value.second})")
+                        Text(text = "${getString(R.string.sign_end)} ${info.value.first}/${info.value.second}")
                     }
                 }
             },

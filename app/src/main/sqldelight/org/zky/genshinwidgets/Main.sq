@@ -52,6 +52,10 @@ insertGameRole:
 INSERT INTO GameRole (account_id, game_uid, game_biz, region, region_name, nickname, level, is_chosen, is_official)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+updateGameRole:
+UPDATE GameRole
+SET nickname = :nickname, level = :level, is_chosen = :is_chosen, is_official = :is_official WHERE game_uid = :gameUid;
+
 deleteAccount:
 DELETE FROM Account WHERE account_id = :account_id;
 

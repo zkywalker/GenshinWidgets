@@ -70,13 +70,13 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             pageRequesting.value = true
             val gameRoles = DatabaseStore.queries.selectAllRoles().executeAsList()
-            if (gameRoles.isEmpty()) {
-                if (accounts.isNotEmpty()) {
-                    roleInfo.value = requestUserRole(accounts)
-                }
-            } else {
-                roleInfo.value = gameRoles.convertToUserRoles()
+//            if (gameRoles.isEmpty()) {
+            if (accounts.isNotEmpty()) {
+                roleInfo.value = requestUserRole(accounts)
             }
+//            } else {
+//                roleInfo.value = gameRoles.convertToUserRoles()
+//            }
             if (roleInfo.value?.isNotEmpty() == true) {
                 val current = currentUseRole.value ?: roleInfo.value?.first()
                 if (current != null) {
@@ -94,11 +94,12 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    private suspend fun getDailyNote(current: UserRole, account: Account) {
+    private suspend fun getDailyNote(current: UserRole, account: Account? = null) {
+        val acc = account ?: DatabaseStore.queries.selectAccount(current.account_id).executeAsOne()
         dailyNote.value = Request.getGameRecord(
             roleId = current.game_uid,
             server = current.region,
-            cookie = account.cookie
+            cookie = acc.cookie
         )
     }
 
@@ -115,17 +116,30 @@ class MainViewModel : ViewModel() {
                 getUserRole.forEach {
                     it.account_id = account.account_id
                     ret.add(it)
-                    DatabaseStore.queries.insertGameRole(
-                        account_id = it.account_id,
-                        game_uid = it.game_uid,
-                        game_biz = it.game_biz,
-                        region = it.region,
-                        region_name = it.region_name,
-                        nickname = it.nickname,
-                        level = it.level.toLongOrNull() ?: 0,
-                        is_chosen = it.is_chosen,
-                        is_official = it.is_official
-                    )
+                    if (DatabaseStore.queries.selectRole(it.game_uid)
+                            .executeAsOneOrNull() == null
+                    ) {
+                        DatabaseStore.queries.insertGameRole(
+                            account_id = it.account_id,
+                            game_uid = it.game_uid,
+                            game_biz = it.game_biz,
+                            region = it.region,
+                            region_name = it.region_name,
+                            nickname = it.nickname,
+                            level = it.level.toLongOrNull() ?: 0,
+                            is_chosen = it.is_chosen,
+                            is_official = it.is_official
+                        )
+                    } else {
+                        DatabaseStore.queries.updateGameRole(
+                            gameUid = it.game_uid,
+                            nickname = it.nickname,
+                            level = it.level.toLongOrNull() ?: 0,
+                            is_chosen = it.is_chosen,
+                            is_official = it.is_official
+                        )
+                    }
+
                 }
             }
         }
@@ -211,6 +225,7 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             getSignInfo(it)
             getCharacters(it)
+            getDailyNote(it)
         }
     }
 

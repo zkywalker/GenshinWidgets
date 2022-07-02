@@ -146,7 +146,7 @@ class WidgetsConfigActivity : AppCompatActivity() {
         themes.Theme {
             Scaffold(topBar = {
                 TopAppBar(
-                    title = { Text(text = org.zky.genshinwidgets.utils.getString(R.string.config_widget)) },
+                    title = { Text(text = org.zky.genshinwidgets.utils.getString(R.string.config_widget), color = themes.colors.buttonText) },
                     navigationIcon = {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
