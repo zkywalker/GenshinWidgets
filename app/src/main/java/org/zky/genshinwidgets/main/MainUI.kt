@@ -278,7 +278,7 @@ fun ObservationPivotView(
 ) {
     Row {
         Button(onClick = onClickTodayMaterial, modifier = Modifier.padding(end = 10.dp)) {
-            Text(text = getString(R.string.today_material))
+            Text(text = getString(R.string.calendar))
         }
         Button(onClick = onClickMap, modifier = Modifier.padding(end = 10.dp)) {
             Text(text = getString(R.string.map))

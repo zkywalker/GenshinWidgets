@@ -12,5 +12,7 @@ object font {
     val bodyM = 14.sp
     val bodyS = 12.sp
 
+    val bodyXXS = 7.sp
+
 
 }

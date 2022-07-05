@@ -29,7 +29,7 @@ data class GetGameActivity(val list: List<GameActivity>)
 //      }
 data class GameActivity(
     val title: String,
-    val kind: String, // 4 生日 2 人物/武器 1 活动
+    val kind: String,
     val img_url: String,
     val jump_type: String,
     val jump_url: String,
@@ -46,6 +46,15 @@ data class GameActivity(
     val sort: String,
     val contentSource: List<ActivityContentSource>
 )
+
+ sealed class ActivityKind(val type: String, val name: String) {
+
+    // 4 生日 2 人物/武器 1 活动
+    object Birthday : ActivityKind("4", "生日")
+    object Foster : ActivityKind("2", "培养")
+    object LimitedTime : ActivityKind("1", "限时任务")
+
+}
 
 //{
 //            "content_id": 833,

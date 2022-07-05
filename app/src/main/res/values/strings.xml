@@ -35,11 +35,13 @@
     <string name="github_repository">https://github.com/zkywalker/GenshinWidgets</string>
     <string name="issue_report">反馈问题</string>
     <string name="issue_report_url">https://github.com/zkywalker/GenshinWidgets/issues</string>
+    <string name="release_url">https://github.com/zkywalker/GenshinWidgets/releases</string>
     <string name="refrsh_time">最近刷新:</string>
     <string name="has_signed1">已签到</string>
     <string name="did_not_sign">未签到</string>
     <string name="observation_pivot">观测枢</string>
-    <string name="today_material">日历</string>
+    <string name="calendar">日历</string>
+    <string name="today_material">今日材料</string>
     <string name="map">地图</string>
     <string name="wiki">图鉴</string>
     <string name="start_app">启动</string>
@@ -109,4 +111,7 @@
     <string name="my_char">我的角色</string>
     <string name="daily_note">便签</string>
     <string name="turn_off_drak_mode">主题跟随系统</string>
+    <string name="limited_time_activities">限时活动</string>
+    <string name="complete">完成</string>
+    <string name="has_new_version">发现新版本，去看看?</string>
 </resources>

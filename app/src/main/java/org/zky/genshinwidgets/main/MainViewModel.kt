@@ -43,11 +43,17 @@ class MainViewModel : ViewModel() {
 
     val activities = MutableLiveData<List<GameActivity>>()
 
+    val limitedActivities = MutableLiveData<List<GameActivity>>()
+
+    val activityContentInfos = MutableLiveData<List<ActivityContentInfo>>()
+
     val signResponse = MutableLiveData<Pair<Int, Int>>()
 
     val showSignResponse = MutableLiveData(false)
 
     val dailyNote = MutableLiveData<DailyNote>()
+
+    val versionInfo = MutableLiveData<VersionInfo>()
 
     fun onPageStart() {
         val accounts = DatabaseStore.queries.selectAllAccounts().executeAsList()
@@ -69,14 +75,10 @@ class MainViewModel : ViewModel() {
         mainAccount = acc.account_id
         viewModelScope.launch {
             pageRequesting.value = true
-            val gameRoles = DatabaseStore.queries.selectAllRoles().executeAsList()
-//            if (gameRoles.isEmpty()) {
+//            val gameRoles = DatabaseStore.queries.selectAllRoles().executeAsList()
             if (accounts.isNotEmpty()) {
                 roleInfo.value = requestUserRole(accounts)
             }
-//            } else {
-//                roleInfo.value = gameRoles.convertToUserRoles()
-//            }
             if (roleInfo.value?.isNotEmpty() == true) {
                 val current = currentUseRole.value ?: roleInfo.value?.first()
                 if (current != null) {
@@ -88,8 +90,22 @@ class MainViewModel : ViewModel() {
             }
 
             activities.value = Request.getGameActivity()?.list?.getTodayActivity()
-            // 欣赏500ms的loading，减少刷新频次
-            delay(500)
+            limitedActivities.value =
+                activities.value?.filter { it.kind == ActivityKind.LimitedTime.type }
+
+            val array = arrayListOf<ActivityContentInfo>()
+            activities.value?.forEach { activity ->
+                if (activity.contentInfos.isNotEmpty()) {
+                    val contentInfo = activity.contentInfos[activity.contentInfos.size - 1]
+                    if (array.find { it.title == contentInfo.title } == null) {
+                        array.add(contentInfo)
+                    }
+                }
+            }
+            activityContentInfos.value = array
+            getVersionInfo()
+            // 欣赏300ms的loading，减少刷新频次
+            delay(300)
             pageRequesting.value = false
         }
     }
@@ -258,9 +274,15 @@ class MainViewModel : ViewModel() {
         accounts.value = DatabaseStore.queries.selectAllAccounts().executeAsList()
     }
 
+    fun getVersionInfo() {
+        viewModelScope.launch {
+            versionInfo.value = Request.getVersionInfo().getOrNull()
+        }
+    }
+
 }
 
-// find all activity in today
+// find all activities in today and sort activities
 private fun List<GameActivity>.getTodayActivity(): List<GameActivity> {
     val date = Date()
     val currentTime = date.time / 1000

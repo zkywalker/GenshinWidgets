@@ -142,4 +142,12 @@ object Request {
         }
     }
 
+    suspend fun getVersionInfo(): Result<VersionInfo> {
+        return kotlin.runCatching {
+            api.getVersionInfo()
+        }.also {
+            Log.i("kyle", it.toString())
+        }
+    }
+
 }
