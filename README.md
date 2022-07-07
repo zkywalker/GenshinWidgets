@@ -9,6 +9,8 @@
 
 功能
 =======
+基于 [Jetpack Compose](https://developer.android.com/jetpack/compose) 构建的原神小工具APP。
+
 * 原神签到
 * 查看今日活动/可培养的角色/可培养的武器
 * 便签小组件
@@ -31,6 +33,12 @@ API来源
 <https://github.com/spencerwooo/PaimonMenuBar>
 
 <https://github.com/sirodeneko/genshin-sign>
+
+问题反馈
+=======
+<https://github.com/zkywalker/GenshinWidgets/issues>
+
+QQ群:721806260
 
 License
 =======

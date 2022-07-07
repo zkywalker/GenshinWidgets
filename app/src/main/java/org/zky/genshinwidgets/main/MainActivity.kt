@@ -50,9 +50,11 @@ import coil.compose.rememberImagePainter
 import com.google.accompanist.flowlayout.FlowRow
 import kotlinx.coroutines.launch
 import org.zky.genshinwidgets.Account
+import org.zky.genshinwidgets.BuildConfig
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.ApiCst
 import org.zky.genshinwidgets.cst.SpCst
+import org.zky.genshinwidgets.model.ActivityContentInfo
 import org.zky.genshinwidgets.model.GameActivity
 import org.zky.genshinwidgets.model.getTypeName
 import org.zky.genshinwidgets.res.*
@@ -134,7 +136,9 @@ class MainActivity : AppCompatActivity() {
                             onClickSignAll = { viewModel.signAll() },
                             onClickSetting = { settingsDialog.value = true },
                             onClickDps = { depsDialog.value = true },
-                            onClickAbout = { showInfoDialog.value = true },
+                            onClickAbout = {
+                                showInfoDialog.value = true
+                            },
                         )
                     }
                 ) {
@@ -483,6 +487,8 @@ class MainActivity : AppCompatActivity() {
         val characters = model.characters.observeAsState()
         val activities = model.activities.observeAsState()
         val dailyNote = model.dailyNote.observeAsState()
+        val limitedActivities = model.limitedActivities.observeAsState()
+        val activityContentInfos = model.activityContentInfos.observeAsState()
 
         Column(
             Modifier
@@ -536,14 +542,24 @@ class MainActivity : AppCompatActivity() {
             val tempList = characters.value?.filter {
                 activities.value?.find { it2 -> it.name == it2.title } != null
             }
-            if (tempList?.isNotEmpty() == true) {
+            if (tempList?.isNotEmpty() == true || limitedActivities.value != null || activityContentInfos.value != null) {
                 DefaultCard(
-                    text = getString(R.string.foster_wives),
+                    text = getString(R.string.today_material),
                     modifier = Modifier.padding(bottom = 10.dp)
                 ) {
 
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        LimitedTimeActivityView(limitedActivities.value)
+                        if (tempList?.isNotEmpty() == true) {
+                            Text(
+                                modifier = Modifier.padding(top = 5.dp, bottom = 5.dp),
+                                text = org.zky.genshinwidgets.utils.getString(R.string.foster_wives)
+                            )
+                        }
                         CharacterListView(tempList)
+                        ActivityContentInfosView(activityContentInfos.value)
                     }
                 }
             }
@@ -554,7 +570,7 @@ class MainActivity : AppCompatActivity() {
                 ObservationPivotView(
                     onClickTodayMaterial = {
                         startWebViwActivity(
-                            getString(R.string.today_material),
+                            getString(R.string.calendar),
                             ApiCst.WEB_URL_TODAY_MATERIAL
                         )
                     },
@@ -587,6 +603,48 @@ class MainActivity : AppCompatActivity() {
                 onSubmit = {
                     checkCookie(it)
                 })
+        }
+    }
+
+    @Composable
+    fun ActivityContentInfosView(value: List<ActivityContentInfo>?) {
+        value ?: return
+        Text(
+            modifier = Modifier.padding(top = 5.dp, bottom = 5.dp),
+            text = getString(R.string.today_material)
+        )
+        FlowRow(mainAxisSpacing = 4.dp, crossAxisSpacing = 4.dp) {
+            value.forEach {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 2.5.dp)
+                        .size(50.dp)
+                        .clip(RoundedCornerShape(5.dp)),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    Image(
+                        modifier = Modifier.fillMaxSize(),
+                        painter = rememberImagePainter(data = it.icon),
+                        contentScale = ContentScale.Fit,
+                        contentDescription = it.title
+                    )
+                    Text(text = it.title, fontSize = font.bodyXXS, color = Color.White)
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun LimitedTimeActivityView(value: List<GameActivity>?) {
+        value ?: return
+        Text(
+            modifier = Modifier.padding(bottom = 5.dp),
+            text = getString(R.string.limited_time_activities)
+        )
+        Row {
+            value.forEach {
+                ActivityView(activity = it)
+            }
         }
     }
 
@@ -782,7 +840,10 @@ class MainActivity : AppCompatActivity() {
                         Text(text = getString(R.string.data_error))
                     }
                     info.value.first == 0 -> {
-                        Text(text = "${getString(R.string.sign_fail)} ${info.value.first}/${info.value.second}", color = themes.colors.error)
+                        Text(
+                            text = "${getString(R.string.sign_fail)} ${info.value.first}/${info.value.second}",
+                            color = themes.colors.error
+                        )
                     }
                     info.value.first == info.value.second -> {
                         Text(text = "${getString(R.string.sign_success)} ${info.value.first}/${info.value.second}")
@@ -798,6 +859,7 @@ class MainActivity : AppCompatActivity() {
 
     @Composable
     fun VersionDialog(onDismissRequest: () -> Unit) {
+        val versionInfo = viewModel.versionInfo.observeAsState()
         AlertDialog(onDismissRequest = onDismissRequest,
             title = { Text("${getString(R.string.app_name)} v${getAppVersionName()}") },
             text = {
@@ -830,6 +892,21 @@ class MainActivity : AppCompatActivity() {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { startBrowser(getString(R.string.issue_report_url)) })
+
+                    val versionCode = versionInfo?.value?.versionCode?.toIntOrNull()
+                    if (versionCode != null && BuildConfig.VERSION_CODE < versionCode) {
+                        Divider(
+                            Modifier
+                                .padding(top = 5.dp, bottom = 5.dp)
+                                .height(1.dp)
+                        )
+                        Text(getString(R.string.has_new_version),
+                            fontFamily = FontFamily.Monospace,
+                            textDecoration = TextDecoration.Underline,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { startBrowser(getString(R.string.release_url)) })
+                    }
                 }
             },
             buttons = {})

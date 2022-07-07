@@ -2,6 +2,8 @@ package org.zky.genshinwidgets.cst
 
 object ApiCst {
 
+    const val API_VERSION_JSON = "https://raw.githubusercontent.com/zkywalker/GenshinWidgets/main/version.json"
+
     const val API_URL_GAME_ACTIVITY =
         "https://api-static.mihoyo.com/common/blackboard/ys_obc/v1/get_activity_calendar?app_sn=ys_obc"
 

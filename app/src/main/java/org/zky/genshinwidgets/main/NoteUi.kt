@@ -39,6 +39,9 @@ fun secondsToTime2(seconds: Long): String {
     val h = seconds / 3600 //小时
     val m = seconds % 3600 / 60 //分钟
     val s = seconds % 3600 % 60 //秒
+    if (h > 24) {
+        return "${h / 24}d"
+    }
     if (h > 0) {
         return "$h:$m"
     }
@@ -155,9 +158,12 @@ fun ExpeditionDetailView(modifier: Modifier = Modifier, item: ExpeditionDetail) 
                 contentDescription = "avatar"
             )
         }
-        if (item.status == "Ongoing") {
-            Text(text = secondsToTime2(item.remained_time), fontSize = font.bodyS)
+        val text = if (item.status == "Ongoing") {
+            secondsToTime2(item.remained_time)
+        } else {
+            getString(R.string.complete)
         }
+        Text(text = text, fontSize = font.bodyS, color = bgRes)
     }
 
 }
@@ -176,6 +182,7 @@ fun RecordItem(modifier: Modifier = Modifier, icon: Int, text: String, style: Co
     }
 }
 
+@Composable
 fun Transformer.getTextColor(): Color {
     if (!obtained) {
         return color.error
@@ -183,5 +190,5 @@ fun Transformer.getTextColor(): Color {
     if (recovery_time.reached) {
         return color.explored
     }
-    return Color.White
+    return themes.colors.textPrimary
 }

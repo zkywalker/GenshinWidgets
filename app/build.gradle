@@ -14,7 +14,7 @@ android {
         applicationId "org.zky.genshinwidgets"
         minSdk 24
         targetSdk 30
-        versionCode 4
+        versionCode 3
         versionName "0.1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -38,8 +38,30 @@ android {
         }
         debug {
             minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            zipAlignEnabled false
         }
     }
+
+    flavorDimensions "version"
+
+    productFlavors {
+        create("store") {
+            dimension = "version"
+            versionNameSuffix = ".store"
+            manifestPlaceholders = [ENVIRONMENT: "store",
+                                    app_icon   : "@mipmap/ic_launcher_store",
+                                    round_icon : "@mipmap/ic_launcher_store_round"]
+        }
+        create("github") {
+            dimension = "version"
+            versionNameSuffix = ".github"
+            manifestPlaceholders = [ENVIRONMENT: "github",
+                                    app_icon   : "@mipmap/ic_launcher",
+                                    round_icon : "@mipmap/ic_launcher_round"]
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8

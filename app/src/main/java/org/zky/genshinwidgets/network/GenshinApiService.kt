@@ -11,6 +11,9 @@ import retrofit2.http.*
 
 interface GenshinApiService {
 
+    @GET
+    suspend fun getVersionInfo(@Url url: String = ApiCst.API_VERSION_JSON): VersionInfo
+
     @GET("${ApiCst.REQUEST_PATH_GET_USER_ROLE}?game_biz=hk4e_cn")
     suspend fun getUserRole(@Header("Cookie") cookie: String? = null): Response<GetUserRole>
 
@@ -47,6 +50,9 @@ interface GenshinApiService {
     ): Response<GetCharacter>
 
     @GET
-    suspend fun getGameActivity(@Url url: String = ApiCst.API_URL_GAME_ACTIVITY, @Header("Cookie") cookie: String? = null): Response<GetGameActivity>
+    suspend fun getGameActivity(
+        @Url url: String = ApiCst.API_URL_GAME_ACTIVITY,
+        @Header("Cookie") cookie: String? = null
+    ): Response<GetGameActivity>
 
 }

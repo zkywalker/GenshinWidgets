@@ -18,6 +18,8 @@ import androidx.glance.unit.ColorProvider
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.SpCst
 import org.zky.genshinwidgets.main.MainActivity
+import org.zky.genshinwidgets.main.secondsToTime
+import org.zky.genshinwidgets.main.secondsToTime2
 import org.zky.genshinwidgets.model.*
 import org.zky.genshinwidgets.res.color
 import org.zky.genshinwidgets.utils.*
@@ -97,27 +99,27 @@ fun WidgetMain(model: DailyNote?, role: UserRole? = null, image: String?) {
                 }
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Column(
-                        modifier = GlanceModifier.clickable(onClick = action),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Image(
-                            ImageProvider(R.drawable.ic_baseline_refresh_24),
-                            contentDescription = "refresh",
-                            modifier = GlanceModifier
-                                .size(20.dp)
-                        )
-                        // todo its not stable, cuz it will refresh when recompose
-                        Text(
-                            text = "${Date().format()}",
-                            style = TextStyle(
-                                color = ColorProvider(Color.White),
-                                fontSize = 10.sp
-                            ),
-                            modifier = GlanceModifier.padding(bottom = 5.dp)
-                        )
-                    }
-//
+//                    Column(
+//                        modifier = GlanceModifier.clickable(onClick = action),
+//                        horizontalAlignment = Alignment.CenterHorizontally
+//                    ) {
+//                        Image(
+//                            ImageProvider(R.drawable.ic_baseline_refresh_24),
+//                            contentDescription = "refresh",
+//                            modifier = GlanceModifier
+//                                .size(20.dp)
+//                        )
+//                        // todo its not stable, cuz it will refresh when recompose
+//                        Text(
+//                            text = "${Date().format()}",
+//                            style = TextStyle(
+//                                color = ColorProvider(Color.White),
+//                                fontSize = 10.sp
+//                            ),
+//                            modifier = GlanceModifier.padding(bottom = 5.dp)
+//                        )
+//                    }
+
 //                    val imageRes =
 //                        if (!TextUtils.isEmpty(signDate) && signDate == format.format(Date())) {
 //                            R.drawable.ic_baseline_assignment_turned_in_24_green
@@ -134,14 +136,26 @@ fun WidgetMain(model: DailyNote?, role: UserRole? = null, image: String?) {
                 }
 
                 Column(modifier = GlanceModifier.fillMaxSize()) {
+                    val resinTime = if (model.current_resin != model.max_resin) {
+                        "  ${secondsToTime2(model.resin_recovery_time)}后回满"
+                    } else {
+                        ""
+                    }
+                    val richesTime = if (model.current_home_coin != model.max_home_coin) {
+                        "  ${secondsToTime2(model.home_coin_recovery_time)}后存满"
+                    } else {
+                        ""
+                    }
                     RecordItem(
                         icon = R.drawable.ic_fragile_resin,
                         text = "${model.current_resin}/${model.max_resin}",
+                        subText = resinTime,
                         style = if (model.current_resin == model.max_resin) finishTextStyle else normalTextStyle
                     )
                     RecordItem(
                         icon = R.drawable.ic_jar_of_riches,
                         text = "${model.current_home_coin}/${model.max_home_coin}",
+                        subText = richesTime,
                         style = if (model.current_home_coin == model.max_home_coin) finishTextStyle else normalTextStyle
                     )
                     var taskDefString = "${model.finished_task_num}/${model.total_task_num}"
@@ -152,25 +166,29 @@ fun WidgetMain(model: DailyNote?, role: UserRole? = null, image: String?) {
                         model.finished_task_num == model.total_task_num -> taskDefTextStyle =
                             finishTextStyle
                     }
-                    RecordItem(
-                        icon = R.drawable.ic_commision,
-                        text = taskDefString,
-                        style = taskDefTextStyle
-                    )
-                    RecordItem(
-                        icon = R.drawable.ic_domain,
-                        text = "${model.remain_resin_discount_num}/${model.resin_discount_num_limit}",
-                        style = if (model.remain_resin_discount_num == model.resin_discount_num_limit) {
-                            finishTextStyle
-                        } else {
-                            normalTextStyle
-                        }
-                    )
-                    RecordItem(
-                        icon = R.drawable.ic_parametric_transformer,
-                        text = model.transformer.getMessage(),
-                        style = model.transformer.getTextStyle()
-                    )
+                    Row {
+                        RecordItem(
+                            modifier = GlanceModifier.padding(end = 2.dp),
+                            icon = R.drawable.ic_commision,
+                            text = taskDefString,
+                            style = taskDefTextStyle
+                        )
+                        RecordItem(
+                            modifier = GlanceModifier.padding(end = 2.dp),
+                            icon = R.drawable.ic_domain,
+                            text = "${model.remain_resin_discount_num}/${model.resin_discount_num_limit}",
+                            style = if (model.remain_resin_discount_num == model.resin_discount_num_limit) {
+                                finishTextStyle
+                            } else {
+                                normalTextStyle
+                            }
+                        )
+                        RecordItem(
+                            icon = R.drawable.ic_parametric_transformer,
+                            text = model.transformer.getMessage(),
+                            style = model.transformer.getTextStyle()
+                        )
+                    }
                     // spacer to make the bottom of the widget look good
                     if (model.expeditions.isEmpty()) {
                         Spacer(GlanceModifier.height(25.dp))
@@ -233,8 +251,14 @@ fun ExpeditionDetailView(item: ExpeditionDetail) {
 }
 
 @Composable
-fun RecordItem(icon: Int, text: String, style: TextStyle) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+fun RecordItem(
+    modifier: GlanceModifier = GlanceModifier,
+    icon: Int,
+    text: String,
+    style: TextStyle,
+    subText: String = ""
+) {
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         Image(
             provider = ImageProvider(icon),
             modifier = GlanceModifier
@@ -243,5 +267,8 @@ fun RecordItem(icon: Int, text: String, style: TextStyle) {
             contentDescription = text
         )
         Text(text = text, style = style)
+        if (!TextUtils.isEmpty(subText)) {
+            Text(text = subText, style = style.copy(fontSize = 10.sp))
+        }
     }
 }
