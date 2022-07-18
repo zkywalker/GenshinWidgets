@@ -38,7 +38,6 @@ API来源
 =======
 <https://github.com/zkywalker/GenshinWidgets/issues>
 
-QQ群:721806260
 
 License
 =======
