@@ -52,6 +52,8 @@ object ApiCst {
 
     const val BBS_SALT_WEB_OLD = "h8w582wxwgqvahcdkpvdhbh2w9casgfl"
 
+    const val BBS_SALT_WEB = "9nQiU3AV0rJSIBWgdynfoGMGKaklfbM7"
+
     const val APP_PACKAGE_NAME_GENSHIN = "com.miHoYo.Yuanshen"
 
     const val APP_PACKAGE_NAME_BBS = "com.mihoyo.hyperion"

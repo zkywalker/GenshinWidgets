@@ -23,7 +23,7 @@ object HeaderHelper {
     fun getDs(): String {
         val ts = getTs()
         val random = getRandomCode()
-        val check = MD5("salt=${ApiCst.BBS_SALT_WEB_OLD}&t=$ts&r=$random")
+        val check = MD5("salt=${ApiCst.BBS_SALT_WEB}&t=$ts&r=$random")
         return "$ts,$random,$check"
     }
 
