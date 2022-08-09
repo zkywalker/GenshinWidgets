@@ -201,9 +201,9 @@ class MainViewModel : ViewModel() {
     fun signMain(useRole: UserRole?) {
         viewModelScope.launch {
             if (sign(useRole)) {
-                getSignInfo(useRole)
                 R.string.sign_success.toast()
             }
+            getSignInfo(useRole)
         }
     }
 

@@ -20,7 +20,7 @@ class GenshinBBSInterceptor : Interceptor {
             .addHeader("DS", HeaderHelper.getDs())
             .addHeader(
                 "User-Agent",
-                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.3.0"
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.34.1"
             )
             .addHeader(
                 "Referer",
@@ -28,7 +28,7 @@ class GenshinBBSInterceptor : Interceptor {
             )
             .addHeader("Accept", "application/json, text/plain, */*")
             .addHeader("Accept-Encodinge", "gzip, deflate, br")
-            .addHeader("x-rpc-app_version", "2.3.0")
+            .addHeader("x-rpc-app_version", "2.34.1")
             .addHeader("x-rpc-client_type", "5")
             .addHeader("x-rpc-device_id", HeaderHelper.deviceId)
 //        if (request.header("Cookie") == null) {
