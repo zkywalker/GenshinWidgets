@@ -381,7 +381,7 @@ class MainActivity : AppCompatActivity() {
                             crossAxisSpacing = 5.dp
                         ) {
                             it.forEach { activity ->
-                                ActivityView(activity)
+                                ActivityView(activity = activity)
                             }
                         }
                     }
@@ -422,9 +422,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable
-    fun ActivityView(activity: GameActivity) {
+    fun ActivityView(modifier: Modifier = Modifier, activity: GameActivity) {
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .size(60.dp)
                 .clip(RoundedCornerShape(5.dp))
         ) {
@@ -643,7 +643,7 @@ class MainActivity : AppCompatActivity() {
         )
         Row {
             value.forEach {
-                ActivityView(activity = it)
+                ActivityView(modifier = Modifier.padding(end = 5.dp), activity = it)
             }
         }
     }
