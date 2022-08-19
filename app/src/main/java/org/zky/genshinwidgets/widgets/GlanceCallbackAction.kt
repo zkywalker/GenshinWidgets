@@ -15,6 +15,8 @@ import kotlinx.coroutines.withContext
 import org.zky.genshinwidgets.R
 import org.zky.genshinwidgets.cst.SpCst
 import org.zky.genshinwidgets.main.findGenshinRole
+import org.zky.genshinwidgets.main.getTodayActivity
+import org.zky.genshinwidgets.model.ActivityContentInfo
 import org.zky.genshinwidgets.model.UserRole
 import org.zky.genshinwidgets.network.Request
 import org.zky.genshinwidgets.utils.*
@@ -55,7 +57,7 @@ class GlanceCallbackAction(
 
             if (parameters[GenshinDailyNoteWidget.ACTION_PARAMETERS_KEY] == ACTION_REQUEST_SIGN) {
                 val sign = Request.sign(roleInfo.game_uid, roleInfo.region, cookie)
-                if (sign?.get("code") == "ok") {
+                if (sign?.get("success") != null) {
 //                    signDate = format.format(Date())
                     R.string.sign_success.toast()
                 }
@@ -65,13 +67,7 @@ class GlanceCallbackAction(
                 Request.getGameRecord(roleInfo.game_uid, roleInfo.region, cookie)
                     ?: return@withContext
             gameRecord.expeditions.forEach {
-                val file = imageUrlToFile(it.avatar_side_icon)
-                if (file != null) {
-                    if (!file.exists() || file.length() == 0L) {
-                        file.createNewFile()
-                        Request.download(it.avatar_side_icon, file)
-                    }
-                }
+                downloadIcon(it.avatar_side_icon)
             }
             var image = parameters[GenshinDailyNoteWidget.ACTION_PARAMETERS_BG] ?: ""
             if (TextUtils.isEmpty(image)) {
@@ -79,6 +75,19 @@ class GlanceCallbackAction(
             } else {
                 Sp.setValue("${SpCst.KEY_IMAGE_BG}_${glanceId.getId()}", image)
             }
+
+            val array = arrayListOf<ActivityContentInfo>()
+            Request.getGameActivity()?.list?.getTodayActivity()?.forEach { activity ->
+                if (activity.contentInfos.isNotEmpty()) {
+                    val contentInfo = activity.contentInfos[activity.contentInfos.size - 1]
+                    if (array.find { it.title == contentInfo.title } == null) {
+                        array.add(contentInfo)
+                        downloadIcon(contentInfo.icon)
+                    }
+                }
+            }
+            Log.d("action", "activityContentInfos: ${array.toJsonOrNull()}")
+            gameRecord.activityContentInfo = array
             withContext(context = Dispatchers.Main) {
                 updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) {
                     it.toMutablePreferences().apply {
@@ -97,6 +106,16 @@ class GlanceCallbackAction(
                 if (needToast && parameters[GenshinDailyNoteWidget.ACTION_PARAMETERS_KEY] == ACTION_REQUEST_DAILY_NOTE) {
                     R.string.refresh_success.toast()
                 }
+            }
+        }
+    }
+
+    private suspend fun downloadIcon(icon: String) {
+        val file = imageUrlToFile(icon)
+        if (file != null) {
+            if (!file.exists() || file.length() == 0L) {
+                file.createNewFile()
+                Request.download(icon, file)
             }
         }
     }

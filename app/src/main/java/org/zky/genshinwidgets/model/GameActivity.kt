@@ -47,7 +47,7 @@ data class GameActivity(
     val contentSource: List<ActivityContentSource>
 )
 
- sealed class ActivityKind(val type: String, val name: String) {
+sealed class ActivityKind(val type: String, val name: String) {
 
     // 4 生日 2 人物/武器 1 活动
     object Birthday : ActivityKind("4", "生日")
@@ -63,10 +63,10 @@ data class GameActivity(
 //            "bbs_url": ""
 //          }
 data class ActivityContentInfo(
-    val content_id: Int,
-    val title: String,
-    val icon: String,
-    val bbs_url: String
+    val content_id: Int = 0,
+    val title: String = "",
+    val icon: String = "",
+    val bbs_url: String? = null
 )
 
 //{

@@ -39,6 +39,7 @@ data class DailyNote(
     val home_coin_recovery_time: Long,
     val calendar_url: String,
     val transformer: Transformer,
+    var activityContentInfo: List<ActivityContentInfo>?=null
 )
 
 //{avatar_side_icon=https://upload-bbs.mihoyo.com/game_record/genshin/character_side_icon/UI_AvatarIcon_Side_Ambor.png, status=Ongoing, remained_time=8835}

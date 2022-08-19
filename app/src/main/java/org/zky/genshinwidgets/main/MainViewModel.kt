@@ -191,7 +191,7 @@ class MainViewModel : ViewModel() {
                 uid = useRole.game_uid,
                 region = useRole.region,
                 cookie = account.cookie
-            )?.get("code") == "ok"
+            )?.get("success") != null
         ) {
             return true
         }
@@ -283,7 +283,7 @@ class MainViewModel : ViewModel() {
 }
 
 // find all activities in today and sort activities
-private fun List<GameActivity>.getTodayActivity(): List<GameActivity> {
+public fun List<GameActivity>.getTodayActivity(): List<GameActivity> {
     val date = Date()
     val currentTime = date.time / 1000
     val cal: Calendar = Calendar.getInstance()

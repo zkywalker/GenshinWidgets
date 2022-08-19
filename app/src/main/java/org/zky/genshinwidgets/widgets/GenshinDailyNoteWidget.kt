@@ -47,7 +47,7 @@ class GenshinDailyNoteWidget : GlanceAppWidget() {
             val userRole = preferencesState[stringPreferencesKey(PRE_DATA_ROLE_INFO)] ?: ""
             val image = preferencesState[stringPreferencesKey(PRE_DATA_BG_IMAGE)] ?: ""
 
-            Log.i("kyle", "dailyNote = $dailyNote, userRole = $userRole")
+//            Log.i("kyle", "dailyNote = $dailyNote, userRole = $userRole, activityContentInfos = $activityContentInfos, image = $image")
             WidgetMain(dailyNote.fromJsonOrNull(), userRole.fromJsonOrNull(), image)
         }
     }
@@ -57,6 +57,7 @@ class GenshinDailyNoteWidget : GlanceAppWidget() {
 
         val PRE_DATA_DAILY_NOTE = "pre_data_daily_note"
         val PRE_DATA_ROLE_INFO = "pre_data_role_info"
+        val PRE_DATA_ACTIVITY = "pre_data_activity_content"
         val PRE_DATA_BG_IMAGE = "pre_data_image_file"
 
         val ACTION_PARAMETERS_KEY = ActionParameters.Key<String>("parameters_keys")
