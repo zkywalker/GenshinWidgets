@@ -1,6 +1,7 @@
 package org.zky.genshinwidgets.widgets
 
 import android.text.TextUtils
+import android.util.Log
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -16,17 +17,13 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import org.zky.genshinwidgets.R
-import org.zky.genshinwidgets.cst.SpCst
 import org.zky.genshinwidgets.main.MainActivity
-import org.zky.genshinwidgets.main.secondsToTime
 import org.zky.genshinwidgets.main.secondsToTime2
 import org.zky.genshinwidgets.model.*
 import org.zky.genshinwidgets.res.color
 import org.zky.genshinwidgets.utils.*
-import org.zky.genshinwidgets.utils.debug.DailyNotePreviewParameterProvider
 import org.zky.genshinwidgets.widgets.GlanceCallbackAction.Companion.ACTION_REQUEST_DAILY_NOTE
 import org.zky.genshinwidgets.widgets.GlanceCallbackAction.Companion.ACTION_REQUEST_SIGN
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -45,8 +42,11 @@ fun Date?.isSameDate(): Boolean {
 }
 
 @Composable
-fun WidgetMain(model: DailyNote?, role: UserRole? = null, image: String?) {
-
+fun WidgetMain(
+    model: DailyNote?,
+    role: UserRole? = null,
+    image: String?
+) {
     val action = actionRunCallback<GlanceCallbackAction>(
         actionParametersOf(GenshinDailyNoteWidget.ACTION_PARAMETERS_KEY to ACTION_REQUEST_DAILY_NOTE)
     )
@@ -98,43 +98,6 @@ fun WidgetMain(model: DailyNote?, role: UserRole? = null, image: String?) {
                     )
                 }
             } else {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-//                    Column(
-//                        modifier = GlanceModifier.clickable(onClick = action),
-//                        horizontalAlignment = Alignment.CenterHorizontally
-//                    ) {
-//                        Image(
-//                            ImageProvider(R.drawable.ic_baseline_refresh_24),
-//                            contentDescription = "refresh",
-//                            modifier = GlanceModifier
-//                                .size(20.dp)
-//                        )
-//                        // todo its not stable, cuz it will refresh when recompose
-//                        Text(
-//                            text = "${Date().format()}",
-//                            style = TextStyle(
-//                                color = ColorProvider(Color.White),
-//                                fontSize = 10.sp
-//                            ),
-//                            modifier = GlanceModifier.padding(bottom = 5.dp)
-//                        )
-//                    }
-
-//                    val imageRes =
-//                        if (!TextUtils.isEmpty(signDate) && signDate == format.format(Date())) {
-//                            R.drawable.ic_baseline_assignment_turned_in_24_green
-//                        } else {
-//                            R.drawable.ic_baseline_assignment_turned_in_24
-//                        }
-//                    Image(
-//                        ImageProvider(imageRes),
-//                        contentDescription = "sign",
-//                        modifier = GlanceModifier
-//                            .size(20.dp)
-//                            .clickable(onClick = actionSign)
-//                    )
-                }
-
                 Column(modifier = GlanceModifier.fillMaxSize()) {
                     val resinTime = if (model.current_resin != model.max_resin) {
                         "  ${secondsToTime2(model.resin_recovery_time)}后回满"
@@ -183,11 +146,21 @@ fun WidgetMain(model: DailyNote?, role: UserRole? = null, image: String?) {
                                 normalTextStyle
                             }
                         )
-                        RecordItem(
-                            icon = R.drawable.ic_parametric_transformer,
-                            text = model.transformer.getMessage(),
-                            style = model.transformer.getTextStyle()
-                        )
+                    }
+                    RecordItem(
+                        icon = R.drawable.ic_parametric_transformer,
+                        text = model.transformer.getMessage(),
+                        style = model.transformer.getTextStyle()
+                    )
+
+                    val activityContentInfos = model.activityContentInfo
+                    if (activityContentInfos != null && activityContentInfos.isNotEmpty()) {
+                        Row {
+                            activityContentInfos.forEach { item ->
+                                ActivityContentView(item)
+                                Log.d("widget", "activityContentInfos: $item")
+                            }
+                        }
                     }
                     // spacer to make the bottom of the widget look good
                     if (model.expeditions.isEmpty()) {
@@ -197,11 +170,36 @@ fun WidgetMain(model: DailyNote?, role: UserRole? = null, image: String?) {
                             model.expeditions.forEach { item -> ExpeditionDetailView(item) }
                         }
                     }
-                    if (Config.showUID && role != null) {
-                        Row(
-                            horizontalAlignment = Alignment.End,
-                            modifier = GlanceModifier.fillMaxSize()
-                        ) {
+                }
+
+                Box(
+                    modifier = GlanceModifier.fillMaxSize(),
+                    contentAlignment = Alignment.BottomStart
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = GlanceModifier.height(15.dp).clickable(onClick = action),
+                    ) {
+                        Image(
+                            ImageProvider(R.drawable.ic_baseline_refresh_24),
+                            contentDescription = "refresh",
+                            modifier = GlanceModifier
+                                .size(15.dp)
+                        )
+                        // todo its not stable, cuz it will refresh when recompose
+                        Text(
+                            text = Date().format(),
+                            style = TextStyle(
+                                color = ColorProvider(Color.White),
+                                fontSize = 10.sp
+                            ),
+                        )
+                    }
+                    Row(
+                        horizontalAlignment = Alignment.End,
+                        modifier = GlanceModifier.fillMaxWidth(),
+                    ) {
+                        if (Config.showUID && role != null) {
                             Text(
                                 text = "UID:${role.game_uid}",
                                 style = TextStyle(
@@ -220,6 +218,25 @@ fun WidgetMain(model: DailyNote?, role: UserRole? = null, image: String?) {
     }
 
 
+}
+
+@Composable
+fun ActivityContentView(item: ActivityContentInfo) {
+    val bitmap = imageUrlToBitmap(item.icon)
+    if (bitmap != null) {
+        Image(
+            ImageProvider(bitmap),
+            contentDescription = item.title,
+            modifier = GlanceModifier.size(19.dp).padding(end = 3.dp, top = 3.dp)
+        )
+    } else {
+        Image(
+            ImageProvider(R.drawable.ic_baseline_refresh_24),
+            contentDescription = "refresh",
+            modifier = GlanceModifier
+                .size(20.dp)
+        )
+    }
 }
 
 @Composable
@@ -262,13 +279,13 @@ fun RecordItem(
         Image(
             provider = ImageProvider(icon),
             modifier = GlanceModifier
-                .size(20.dp)
-                .padding(end = 5.dp),
+                .size(19.dp)
+                .padding(end = 3.dp),
             contentDescription = text
         )
         Text(text = text, style = style)
         if (!TextUtils.isEmpty(subText)) {
-            Text(text = subText, style = style.copy(fontSize = 10.sp))
+            Text(text = subText, style = style.copy(fontSize = 9.sp))
         }
     }
 }

@@ -164,7 +164,6 @@ fun LoadingView(modifier: Modifier = Modifier, onDismissRequest: () -> Unit = {}
                 }
             )
         )
-        Log.i("amin", "$index")
         val image = index % Element.all.size
 
         Image(

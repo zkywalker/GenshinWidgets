@@ -28,7 +28,7 @@
     <string name="no_user_role_info">暂无角色信息</string>
     <string name="copy_uid">复制UID</string>
     <string name="sign_success">签到成功</string>
-    <string name="has_received_reward">已领取奖励</string>
+    <string name="has_received_reward">已完成</string>
     <string name="loading_widget">加载小组件中</string>
     <string name="did_not_login">当前未登录</string>
     <string name="refresh_success">刷新完成</string>
